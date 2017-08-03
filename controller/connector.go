@@ -15,7 +15,7 @@ var (
 )
 
 type DBConnector struct {
-	db *sql.DB
+	*sql.DB
 }
 
 func newConnector() (*DBConnector, error) {
@@ -58,7 +58,17 @@ func newConnector() (*DBConnector, error) {
 		log.Println("Error while setting locking_mode=EXCLUSIVE:", err.Error())
 	}
 
+
 	return &DBConnector{db}, nil
+}
+
+func (conn *DBConnector) Reset() (e error) {
+	for _, table := range STS_TABLES {
+		if _, err := conn.Exec(`DELETE FROM ` + table); err != nil {
+			e = err
+		}
+	}
+	return e
 }
 
 func GetConnector() (*DBConnector, error) {

@@ -1,15 +1,17 @@
-package model
+package entity
+
+import "database/sql"
 
 type Tournament struct {
-	id      string
-	deposit int
-	winner  string
+	Id       string
+	Deposit  int
+	WinnerId sql.NullString
 }
 
 func NewTournament(id string, deposit int) *Tournament {
 	return &Tournament{
-		id:      id,
-		deposit: deposit,
+		Id:      id,
+		Deposit: deposit,
 	}
 }
 

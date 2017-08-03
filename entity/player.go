@@ -1,4 +1,4 @@
-package model
+package entity
 
 type Player struct {
 	Id      string `json:"playerId"`
@@ -21,7 +21,6 @@ func (p *Player) Take(points int) bool {
 	}
 }
 
-func (p *Player) Fund(points int) bool {
+func (p *Player) Fund(points int) {
 	p.Balance += points
-	return true
 }

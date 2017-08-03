@@ -1,12 +1,11 @@
-package view
+package handler
 
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/sashayakovtseva/social-tournament-service/controller"
-	"github.com/sashayakovtseva/social-tournament-service/model"
+	"github.com/sashayakovtseva/social-tournament-service/entity"
 )
 
 const (
@@ -20,67 +19,63 @@ const (
 func HandleTake(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	playerId := params.Get(PLAYER_ID_PARAM)
-	points, err := strconv.Atoi(params.Get(POINTS_PARAM))
+	points, err := parsePointsParam(params.Get(POINTS_PARAM))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if points < 0 {
-		http.Error(w, "Points should be a non negative value", http.StatusBadRequest)
 		return
 	}
 	playerController, err := controller.GetPlayerController()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	player := playerController.GetById(playerId)
+	if player == nil {
+		http.Error(w, "No such player", http.StatusBadRequest)
+		return
+	}
+	if player.Take(points) {
+		playerController.Update(player)
 	} else {
-		player := playerController.GetPlayerById(playerId)
-		if player == nil {
-			playerController.InsertPlayer(model.NewPlayer(playerId, points))
-		} else {
-			player.Fund(points)
-			playerController.UpdatePlayer(player)
-		}
+		http.Error(w, "Not enough points", http.StatusBadRequest)
 	}
 }
 
 func HandleFund(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	playerId := params.Get(PLAYER_ID_PARAM)
-	points, err := strconv.Atoi(params.Get(POINTS_PARAM))
+	points, err := parsePointsParam(params.Get(POINTS_PARAM))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if points < 0 {
-		http.Error(w, "Points should be a non negative value", http.StatusBadRequest)
 		return
 	}
 	playerController, err := controller.GetPlayerController()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	player := playerController.GetById(playerId)
+	if player == nil {
+		playerController.Create(entity.NewPlayer(playerId, points))
 	} else {
-		player := playerController.GetPlayerById(playerId)
-		if player == nil {
-			playerController.InsertPlayer(model.NewPlayer(playerId, points))
-		} else {
-			player.Fund(points)
-			playerController.UpdatePlayer(player)
-		}
+		player.Fund(points)
+		playerController.Update(player)
 	}
 }
+
 func HandleBalance(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	playerId := params.Get(PLAYER_ID_PARAM)
 	playerController, err := controller.GetPlayerController()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	player := playerController.GetById(playerId)
+	if player == nil {
+		http.Error(w, "No such player", http.StatusBadRequest)
 	} else {
-		player := playerController.GetPlayerById(playerId)
-		if player == nil {
-			http.Error(w, "No such player", http.StatusBadRequest)
-		} else {
-			w.Header().Set(CONTENT_TYPE, APPLICATION_JSON)
-			json.NewEncoder(w).Encode(player)
-		}
+		w.Header().Set(CONTENT_TYPE, APPLICATION_JSON)
+		json.NewEncoder(w).Encode(player)
 	}
 }
