@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/sashayakovtseva/social-tournament-service/controller"
-	"github.com/sashayakovtseva/social-tournament-service/entity"
 )
 
 const (
@@ -17,49 +16,41 @@ const (
 )
 
 func HandleTake(w http.ResponseWriter, r *http.Request) {
+	var err error
+	defer func() {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+	}()
+
 	params := r.URL.Query()
 	playerId := params.Get(PLAYER_ID_PARAM)
 	points, err := parsePointsParam(params.Get(POINTS_PARAM))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	playerController, err := controller.GetPlayerController()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	player := playerController.GetById(playerId)
-	if player == nil {
-		http.Error(w, "No such player", http.StatusBadRequest)
-		return
-	}
-	if player.Take(points) {
-		playerController.Update(player)
-	} else {
-		http.Error(w, "Not enough points", http.StatusBadRequest)
+	if err == nil {
+		// todo mb create global controller?
+		var playerController *controller.PlayerController
+		if playerController, err = controller.GetPlayerController(); err == nil {
+			err = playerController.Take(playerId, points)
+		}
 	}
 }
 
 func HandleFund(w http.ResponseWriter, r *http.Request) {
+	var err error
+	defer func() {
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+	}()
+
 	params := r.URL.Query()
 	playerId := params.Get(PLAYER_ID_PARAM)
 	points, err := parsePointsParam(params.Get(POINTS_PARAM))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	playerController, err := controller.GetPlayerController()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	player := playerController.GetById(playerId)
-	if player == nil {
-		playerController.Create(entity.NewPlayer(playerId, points))
-	} else {
-		player.Fund(points)
-		playerController.Update(player)
+	if err == nil {
+		var playerController *controller.PlayerController
+		if playerController, err = controller.GetPlayerController(); err == nil {
+			err = playerController.Fund(playerId, points)
+		}
 	}
 }
 
@@ -71,6 +62,7 @@ func HandleBalance(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	// todo separate response struct?
 	player := playerController.GetById(playerId)
 	if player == nil {
 		http.Error(w, "No such player", http.StatusBadRequest)

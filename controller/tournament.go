@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sync"
+	"errors"
 
 	"github.com/sashayakovtseva/social-tournament-service/entity"
 )
@@ -89,7 +90,6 @@ func (tC *TournamentController) GetById(id string) *entity.Tournament {
 	tournament := &entity.Tournament{}
 	err := tC.preparedSelect.QueryRow(id).Scan(&tournament.Id, &tournament.Deposit, &tournament.WinnerId)
 	if err != nil {
-		fmt.Printf("%T: %s", err, err)
 		return nil
 	}
 	return tournament
@@ -105,11 +105,20 @@ func (tC *TournamentController) Create(tournament *entity.Tournament) error {
 	return err
 }
 
+func (tC *TournamentController) Announce() error {
+ return  nil
+}
+
 func (tC *TournamentController) JoinTournament(tournament *entity.Tournament, player *entity.Player, backers []*entity.Player) error {
+	if !tournament.Join(player, backers) {
+		return errors.New("Not enough points to join")
+	}
+
 	tx, err := tC.connector.Begin()
 	if err != nil {
 		return err
 	}
+
 	_, err = tx.Stmt(tC.preparedJoinTournament).Exec(player.Id, tournament.Id)
 	if err != nil {
 		tx.Rollback()

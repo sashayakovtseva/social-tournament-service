@@ -21,7 +21,6 @@ func HandleAnnounce(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	tournamentController, err := controller.GetTournamentController()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -79,5 +78,9 @@ func HandleJoin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
+
+}
+
+func HandleResult(w http.ResponseWriter, r *http.Request) {
 
 }

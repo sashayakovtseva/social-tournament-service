@@ -2,6 +2,7 @@ package controller
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -85,4 +86,25 @@ func (pC *PlayerController) Update(player *entity.Player) error {
 func (pC *PlayerController) Create(player *entity.Player) error {
 	_, err := pC.preparedInsert.Exec(player.Id, player.Balance)
 	return err
+}
+
+func (pC *PlayerController) Take(playerId string, points int) error {
+	player := pC.GetById(playerId)
+	if player == nil {
+		return errors.New("No such player")
+	}
+	if player.Take(points) {
+		pC.Update(player)
+		return nil
+	}
+	return errors.New("Not enough points")
+}
+
+func (pC *PlayerController) Fund(playerId string, points int) error {
+	player := pC.GetById(playerId)
+	if player == nil {
+		return pC.Create(entity.NewPlayer(playerId, points))
+	}
+	player.Fund(points)
+	return pC.Update(player)
 }

@@ -19,6 +19,26 @@ func parsePointsParam(p string) (int, error) {
 	return points, nil
 }
 
+func GetHandler(handler http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "", http.StatusMethodNotAllowed)
+		} else {
+			handler.ServeHTTP(w, r)
+		}
+	})
+}
+
+func PostHandler(handler http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "", http.StatusMethodNotAllowed)
+		} else {
+			handler.ServeHTTP(w, r)
+		}
+	})
+}
+
 func HandleReset(w http.ResponseWriter, r *http.Request) {
 	connector, err := controller.GetConnector()
 	if err != nil {
