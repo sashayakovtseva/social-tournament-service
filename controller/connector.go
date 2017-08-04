@@ -24,7 +24,6 @@ func newConnector() (*DBConnector, error) {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(1)
 
 	// create tables if they don't exist yet
 	if _, err = db.Exec(CREATE_PLAYERS_TABLE); err != nil {
@@ -48,14 +47,8 @@ func newConnector() (*DBConnector, error) {
 	if _, err = db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
 		log.Println("Error while setting journal_mode=WAL:", err.Error())
 	}
-	if _, err = db.Exec("PRAGMA synchronous=OFF;"); err != nil {
-		log.Println("Error while setting synchronous=OFF:", err.Error())
-	}
 	if _, err = db.Exec("PRAGMA temp_store=MEMORY;"); err != nil {
 		log.Println("Error while setting temp_store=MEMORY:", err.Error())
-	}
-	if _, err = db.Exec("PRAGMA locking_mode=EXCLUSIVE;"); err != nil {
-		log.Println("Error while setting locking_mode=EXCLUSIVE:", err.Error())
 	}
 
 	return &DBConnector{db}, nil

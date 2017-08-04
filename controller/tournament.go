@@ -74,9 +74,9 @@ func newTournamentController() (*TournamentController, error) {
 		return nil, err
 	}
 	tournController.preparedSelectBackers, err = connector.Prepare(fmt.Sprintf(
-		`SELECT %s, %s FROM %s INNER JOIN %s ON %s.%s  = %s.%s WHERE %s = ? AND %s.%s = ?`,
-		PLAYER_ID_COL_NAME, BALANCE_COL_NAME, PLAYERS_TABLE_NAME, P2B_TABLE_NAME, P2B_TABLE_NAME, BACKER_COL_NAME,
-		PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME, TOURNAMENT_ID_COL_NAME, P2B_TABLE_NAME, PLAYER_ID_COL_NAME))
+		`SELECT %s.%s, %s FROM %s INNER JOIN %s ON %s.%s  = %s.%s WHERE %s = ? AND %s.%s = ?`,
+		PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME, BALANCE_COL_NAME, PLAYERS_TABLE_NAME, P2B_TABLE_NAME, P2B_TABLE_NAME,
+		BACKER_COL_NAME, PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME, TOURNAMENT_ID_COL_NAME, P2B_TABLE_NAME, PLAYER_ID_COL_NAME))
 	if err != nil {
 		tournController.Close()
 		return nil, err
