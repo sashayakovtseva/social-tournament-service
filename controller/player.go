@@ -70,25 +70,38 @@ func (pC *PlayerController) Close() {
 }
 
 func (pC *PlayerController) GetById(id string) *entity.Player {
-	player := &entity.Player{}
-	err := pC.preparedSelect.QueryRow(id).Scan(&player.Id, &player.Balance)
+	var playerId string
+	var balance float32
+	err := pC.preparedSelect.QueryRow(id).Scan(&playerId, &balance)
 	if err != nil {
 		return nil
 	}
-	return player
+	return entity.NewPlayer(playerId, balance)
 }
 
-func (pC *PlayerController) Update(player *entity.Player) error {
-	_, err := pC.preparedUpdate.Exec(player.Balance, player.Id)
+func (pC *PlayerController) Update(players ...*entity.Player) error {
+	tx, err := pC.connector.Begin()
+	if err != nil {
+		return err
+	}
+	preparedUpdateTx := tx.Stmt(pC.preparedUpdate)
+	for _, player := range players {
+		_, err := preparedUpdateTx.Exec(player.Balance(), player.Id())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	tx.Commit()
 	return err
 }
 
 func (pC *PlayerController) Create(player *entity.Player) error {
-	_, err := pC.preparedInsert.Exec(player.Id, player.Balance)
+	_, err := pC.preparedInsert.Exec(player.Id(), player.Balance())
 	return err
 }
 
-func (pC *PlayerController) Take(playerId string, points int) error {
+func (pC *PlayerController) Take(playerId string, points float32) error {
 	player := pC.GetById(playerId)
 	if player == nil {
 		return errors.New("No such player")
@@ -100,11 +113,19 @@ func (pC *PlayerController) Take(playerId string, points int) error {
 	return errors.New("Not enough points")
 }
 
-func (pC *PlayerController) Fund(playerId string, points int) error {
+func (pC *PlayerController) Fund(playerId string, points float32) error {
 	player := pC.GetById(playerId)
 	if player == nil {
 		return pC.Create(entity.NewPlayer(playerId, points))
 	}
 	player.Fund(points)
 	return pC.Update(player)
+}
+
+func (pC *PlayerController) Balance(playerId string) (*entity.PlayerBalanceResponse, error) {
+	player := pC.GetById(playerId)
+	if player == nil {
+		return nil, errors.New("No such player")
+	}
+	return &entity.PlayerBalanceResponse{Id: player.Id(), Balance: player.Balance()}, nil
 }

@@ -58,7 +58,6 @@ func newConnector() (*DBConnector, error) {
 		log.Println("Error while setting locking_mode=EXCLUSIVE:", err.Error())
 	}
 
-
 	return &DBConnector{db}, nil
 }
 

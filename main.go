@@ -13,7 +13,7 @@ func main() {
 	http.HandleFunc("/balance", handler.GetHandler(handler.HandleBalance))
 	http.HandleFunc("/announceTournament", handler.GetHandler(handler.HandleAnnounce))
 	http.HandleFunc("/joinTournament", handler.GetHandler(handler.HandleJoin))
-	http.HandleFunc("/resultTournament", handler.PostHandler(handler.HandleResult))
+	http.HandleFunc("/resultTournament", handler.PostJsonHandler(handler.HandleResult))
 	http.HandleFunc("/reset", handler.GetHandler(handler.HandleReset))
 
 	fmt.Printf("Listening on port %d\n", handler.DEPLOY_PORT)

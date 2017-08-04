@@ -1,26 +1,39 @@
 package entity
 
-type Player struct {
-	Id      string `json:"playerId"`
-	Balance int    `json:"balance"`
+type PlayerBalanceResponse struct {
+	Id      string  `json:"playerId"`
+	Balance float32 `json:"balance"`
 }
 
-func NewPlayer(id string, balance int) *Player {
+type Player struct {
+	id      string
+	balance float32
+}
+
+func NewPlayer(id string, balance float32) *Player {
 	return &Player{
-		Id:      id,
-		Balance: balance,
+		id:      id,
+		balance: balance,
 	}
 }
 
-func (p *Player) Take(points int) bool {
-	if points > p.Balance {
+func (p *Player) Take(points float32) bool {
+	if points > p.balance {
 		return false
 	} else {
-		p.Balance -= points
+		p.balance -= points
 		return true
 	}
 }
 
-func (p *Player) Fund(points int) {
-	p.Balance += points
+func (p *Player) Fund(points float32) {
+	p.balance += points
+}
+
+func (p *Player) Id() string {
+	return p.id
+}
+
+func (p *Player) Balance() float32 {
+	return p.balance
 }
