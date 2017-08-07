@@ -27,19 +27,16 @@ func (t *Tournament) Result(participants []*Player, backPlayers [][]*Player, win
 	for i, player := range participants {
 		backers := backPlayers[i]
 		if prize, ok := winners[*player]; ok {
-			contributed := t.deposit / float32(len(backers)+1)
 			won := prize / float32(len(backers)+1)
-			involved[player.Id()] = player.Balance() - contributed + won
+			involved[player.Id()] = player.Balance() + won
 			for _, back := range backers {
-				involved[back.Id()] = back.Balance() - contributed + won
+				involved[back.Id()] = back.Balance() + won
 			}
-		} else {
-			involved[player.Id()] = player.Balance() - t.deposit
 		}
 	}
 	t.isFinished = true
 
-	result := make ([]*Player, 0, len(involved))
+	result := make([]*Player, 0, len(involved))
 	for id, balance := range involved {
 		result = append(result, NewPlayer(id, balance))
 	}
@@ -48,16 +45,15 @@ func (t *Tournament) Result(participants []*Player, backPlayers [][]*Player, win
 }
 
 func (t *Tournament) Join(player *Player, backers []*Player) bool {
-	threshold := t.deposit / float32(len(backers)+1)
-	if player.Balance() < threshold {
+	contribute := t.deposit / float32(len(backers)+1)
+	if !player.Take(contribute) {
 		return false
 	}
 	for _, backer := range backers {
-		if backer.Balance() < threshold {
+		if !backer.Take(contribute) {
 			return false
 		}
 	}
-
 	return true
 }
 

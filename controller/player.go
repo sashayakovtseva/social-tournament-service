@@ -20,6 +20,7 @@ type PlayerController struct {
 	preparedInsert *sql.Stmt
 	preparedUpdate *sql.Stmt
 	preparedSelect *sql.Stmt
+	lock           sync.Mutex
 }
 
 func newPlayerController() (*PlayerController, error) {
@@ -92,8 +93,18 @@ func (pC *PlayerController) Update(players ...*entity.Player) error {
 			return err
 		}
 	}
-	tx.Commit()
-	return err
+	return tx.Commit()
+}
+
+func (pC *PlayerController) UpdateWithTx(tx *sql.Tx, players ...*entity.Player) error {
+	preparedUpdateTx := tx.Stmt(pC.preparedUpdate)
+	for _, player := range players {
+		_, err := preparedUpdateTx.Exec(player.Balance(), player.Id())
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (pC *PlayerController) Create(player *entity.Player) error {
@@ -106,6 +117,9 @@ func (pC *PlayerController) Take(playerId string, points float32) error {
 	if player == nil {
 		return errors.New("No such player")
 	}
+
+	pC.lock.Lock()
+	defer pC.lock.Unlock()
 	if player.Take(points) {
 		pC.Update(player)
 		return nil
@@ -115,6 +129,9 @@ func (pC *PlayerController) Take(playerId string, points float32) error {
 
 func (pC *PlayerController) Fund(playerId string, points float32) error {
 	player := pC.GetById(playerId)
+
+	pC.lock.Lock()
+	defer pC.lock.Unlock()
 	if player == nil {
 		return pC.Create(entity.NewPlayer(playerId, points))
 	}
@@ -128,4 +145,10 @@ func (pC *PlayerController) Balance(playerId string) (*entity.PlayerBalanceRespo
 		return nil, errors.New("No such player")
 	}
 	return &entity.PlayerBalanceResponse{Id: player.Id(), Balance: player.Balance()}, nil
+}
+
+func (pC *PlayerController) ResultWithTx(tx *sql.Tx, winners []*entity.Player) error {
+	pC.lock.Lock()
+	defer pC.lock.Unlock()
+	return pC.UpdateWithTx(tx, winners...)
 }

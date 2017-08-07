@@ -24,6 +24,7 @@ type TournamentController struct {
 	preparedInsertBackPlayer   *sql.Stmt
 	preparedSelectParticipants *sql.Stmt
 	preparedSelectBackers      *sql.Stmt
+	lock                       sync.Mutex
 }
 
 func newTournamentController() (*TournamentController, error) {
@@ -132,6 +133,11 @@ func (tC *TournamentController) Update(tournament *entity.Tournament) error {
 	return err
 }
 
+func (tC *TournamentController) UpdateWithTx(tx *sql.Tx, tournament *entity.Tournament) error {
+	_, err := tx.Stmt(tC.preparedUpdateTournament).Exec(tournament.IsFinished(), tournament.Id())
+	return err
+}
+
 func (tC *TournamentController) Create(tournament *entity.Tournament) error {
 	_, err := tC.preparedInsertTournament.Exec(tournament.Id(), tournament.Deposit())
 	return err
@@ -142,8 +148,9 @@ func (tC *TournamentController) Announce(tournamentId string, deposit float32) e
 	if tournament != nil {
 		return errors.New("Tournament already exists")
 	}
-	tC.Create(entity.NewTournament(tournamentId, deposit, false))
-	return nil
+	tC.lock.Lock()
+	defer tC.lock.Unlock()
+	return tC.Create(entity.NewTournament(tournamentId, deposit, false))
 }
 
 func (tC *TournamentController) Result(tournamentResult *entity.ResultTournamentRequest) error {
@@ -154,6 +161,9 @@ func (tC *TournamentController) Result(tournamentResult *entity.ResultTournament
 	if tournament.IsFinished() {
 		return errors.New("Tournament has finished already")
 	}
+
+	tC.lock.Lock()
+	defer tC.lock.Unlock()
 
 	playerController, err := GetPlayerController()
 	if err != nil {
@@ -203,9 +213,22 @@ func (tC *TournamentController) Result(tournamentResult *entity.ResultTournament
 	}
 
 	involved := tournament.Result(participants, backPlayers, winners)
-	playerController.Update(involved...)
-	tC.Update(tournament)
-	return nil
+
+	tx, err := tC.connector.Begin()
+	if err != nil {
+		return err
+	}
+	err = playerController.ResultWithTx(tx, involved)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tC.UpdateWithTx(tx, tournament)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }
 
 func (tC *TournamentController) JoinTournament(tournamentId, playerId string, backersId []string) error {
@@ -216,6 +239,10 @@ func (tC *TournamentController) JoinTournament(tournamentId, playerId string, ba
 	if tournament.IsFinished() {
 		return errors.New("Tournament has finished already")
 	}
+
+	tC.lock.Lock()
+	defer tC.lock.Unlock()
+
 	playerController, err := GetPlayerController()
 	if err != nil {
 		return err
@@ -242,6 +269,19 @@ func (tC *TournamentController) JoinTournament(tournamentId, playerId string, ba
 	if err != nil {
 		return err
 	}
+
+	playerController.UpdateWithTx(tx, player)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	playerController.UpdateWithTx(tx, backPlayers...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	_, err = tx.Stmt(tC.preparedJoinTournament).Exec(player.Id(), tournament.Id())
 	if err != nil {
 		tx.Rollback()
@@ -255,6 +295,5 @@ func (tC *TournamentController) JoinTournament(tournamentId, playerId string, ba
 			return err
 		}
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
