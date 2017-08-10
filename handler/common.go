@@ -33,8 +33,6 @@ func MethodPost(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "", http.StatusMethodNotAllowed)
-		} else if r.Header.Get(CONTENT_TYPE) != APPLICATION_JSON {
-			http.Error(w, "", http.StatusUnsupportedMediaType)
 		} else {
 			handler.ServeHTTP(w, r)
 		}
