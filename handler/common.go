@@ -8,6 +8,8 @@ import (
 	"github.com/sashayakovtseva/social-tournament-service/controller"
 )
 
+type HandleFuncWithErr func(http.ResponseWriter, *http.Request) error
+
 func parsePointsParam(p string) (float32, error) {
 	points, err := strconv.ParseFloat(p, 32)
 	if err != nil {
@@ -49,8 +51,14 @@ func CntTypeJson(handler http.Handler) http.Handler {
 	})
 }
 
-func HandleReset(w http.ResponseWriter, r *http.Request) {
-	if err := controller.Reset(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
+func HandleReset(_ http.ResponseWriter, _ *http.Request) error {
+	return controller.Reset()
+}
+
+func HandleWithErrWrap(handler HandleFuncWithErr) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := handler(w, r); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+	})
 }

@@ -8,13 +8,13 @@ import (
 )
 
 func main() {
-	http.Handle("/take", h.MethodGet(http.HandlerFunc(h.HandleTake)))
-	http.Handle("/fund", h.MethodGet(http.HandlerFunc(h.HandleFund)))
-	http.Handle("/balance", h.MethodGet(http.HandlerFunc(h.HandleBalance)))
-	http.Handle("/announceTournament", h.MethodGet(http.HandlerFunc(h.HandleAnnounce)))
-	http.Handle("/joinTournament", h.MethodGet(http.HandlerFunc(h.HandleJoin)))
-	http.Handle("/resultTournament", h.MethodPost(h.CntTypeJson(http.HandlerFunc(h.HandleResult))))
-	http.Handle("/reset", h.MethodGet(http.HandlerFunc(h.HandleReset)))
+	http.Handle("/take", h.MethodGet(h.HandleWithErrWrap(h.HandleTake)))
+	http.Handle("/fund", h.MethodGet(h.HandleWithErrWrap(h.HandleFund)))
+	http.Handle("/balance", h.MethodGet(h.HandleWithErrWrap(h.HandleBalance)))
+	http.Handle("/announceTournament", h.MethodGet(h.HandleWithErrWrap(h.HandleAnnounce)))
+	http.Handle("/joinTournament", h.MethodGet(h.HandleWithErrWrap(h.HandleJoin)))
+	http.Handle("/resultTournament", h.MethodPost(h.CntTypeJson(h.HandleWithErrWrap(h.HandleResult))))
+	http.Handle("/reset", h.MethodGet(h.HandleWithErrWrap(h.HandleReset)))
 
 	fmt.Printf("Listening on port %d\n", h.DEPLOY_PORT)
 	http.ListenAndServe(fmt.Sprintf(":%d", h.DEPLOY_PORT), nil)
