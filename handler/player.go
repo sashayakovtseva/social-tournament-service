@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/sashayakovtseva/social-tournament-service/controller"
-	"github.com/sashayakovtseva/social-tournament-service/entity"
 )
 
 const (
@@ -15,6 +14,11 @@ const (
 	APPLICATION_JSON = "application/json"
 	CONTENT_TYPE     = "Content-Type"
 )
+
+type PlayerBalanceResponse struct {
+	Id      string  `json:"playerId"`
+	Balance float32 `json:"balance"`
+}
 
 func HandleTake(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -28,10 +32,8 @@ func HandleTake(w http.ResponseWriter, r *http.Request) {
 	playerId := params.Get(PLAYER_ID_PARAM)
 	points, err := parsePointsParam(params.Get(POINTS_PARAM))
 	if err == nil {
-		var playerController *controller.PlayerController
-		if playerController, err = controller.GetPlayerController(); err == nil {
-			err = playerController.Take(playerId, points)
-		}
+		playerController := controller.GetPlayerController()
+		err = playerController.Take(playerId, points)
 	}
 }
 
@@ -47,10 +49,8 @@ func HandleFund(w http.ResponseWriter, r *http.Request) {
 	playerId := params.Get(PLAYER_ID_PARAM)
 	points, err := parsePointsParam(params.Get(POINTS_PARAM))
 	if err == nil {
-		var playerController *controller.PlayerController
-		if playerController, err = controller.GetPlayerController(); err == nil {
-			err = playerController.Fund(playerId, points)
-		}
+		playerController := controller.GetPlayerController()
+		err = playerController.Fund(playerId, points)
 	}
 }
 
@@ -64,13 +64,11 @@ func HandleBalance(w http.ResponseWriter, r *http.Request) {
 
 	params := r.URL.Query()
 	playerId := params.Get(PLAYER_ID_PARAM)
-	var playerController *controller.PlayerController
-	if playerController, err = controller.GetPlayerController(); err == nil {
-		var result *entity.PlayerBalanceResponse
-		result, err = playerController.Balance(playerId)
-		if err == nil {
-			w.Header().Set(CONTENT_TYPE, APPLICATION_JSON)
-			err = json.NewEncoder(w).Encode(result)
-		}
+	playerController := controller.GetPlayerController()
+	var balance float32
+	balance, err = playerController.Balance(playerId)
+	if err == nil {
+		w.Header().Set(CONTENT_TYPE, APPLICATION_JSON)
+		err = json.NewEncoder(w).Encode(PlayerBalanceResponse{Balance: balance, Id: playerId})
 	}
 }

@@ -26,11 +26,8 @@ func HandleAnnounce(w http.ResponseWriter, r *http.Request) {
 	tournamentId := params.Get(TOURNAMENT_ID_PARAM)
 	deposit, err := parsePointsParam(params.Get(DEPOSIT_PARAM))
 	if err == nil {
-		var tournamentController *controller.TournamentController
-		tournamentController, err = controller.GetTournamentController()
-		if err == nil {
-			err = tournamentController.Announce(tournamentId, deposit)
-		}
+		tournamentController := controller.GetTournamentController()
+		err = tournamentController.Announce(tournamentId, deposit)
 	}
 }
 
@@ -47,11 +44,8 @@ func HandleJoin(w http.ResponseWriter, r *http.Request) {
 	playerId := params.Get(PLAYER_ID_PARAM)
 	backers := params[BACKER_ID_PARAM]
 
-	tournamentController, err := controller.GetTournamentController()
-	if err == nil {
-		err = tournamentController.JoinTournament(tournamentId, playerId, backers)
-	}
-
+	tournamentController := controller.GetTournamentController()
+	err = tournamentController.JoinTournament(tournamentId, playerId, backers)
 }
 
 func HandleResult(w http.ResponseWriter, r *http.Request) {
@@ -65,10 +59,7 @@ func HandleResult(w http.ResponseWriter, r *http.Request) {
 	var requestBody *entity.ResultTournamentRequest
 	err = json.NewDecoder(r.Body).Decode(&requestBody)
 	if err == nil {
-		var tournamentController *controller.TournamentController
-		tournamentController, err = controller.GetTournamentController()
-		if err == nil {
-			err = tournamentController.Result(requestBody)
-		}
+		tournamentController := controller.GetTournamentController()
+		err = tournamentController.Result(requestBody)
 	}
 }

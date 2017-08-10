@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/sashayakovtseva/social-tournament-service/handler"
+	h "github.com/sashayakovtseva/social-tournament-service/handler"
 )
 
 func main() {
-	http.Handle("/take", handler.GetHandler(http.HandlerFunc(handler.HandleTake)))
-	http.Handle("/fund", handler.GetHandler(http.HandlerFunc(handler.HandleFund)))
-	http.Handle("/balance", handler.GetHandler(http.HandlerFunc(handler.HandleBalance)))
-	http.Handle("/announceTournament", handler.GetHandler(http.HandlerFunc(handler.HandleAnnounce)))
-	http.Handle("/joinTournament", handler.GetHandler(http.HandlerFunc(handler.HandleJoin)))
-	http.Handle("/resultTournament", handler.PostJsonHandler(http.HandlerFunc(handler.HandleResult)))
-	http.Handle("/reset", handler.GetHandler(http.HandlerFunc(handler.HandleReset)))
+	http.Handle("/take", h.MethodGet(http.HandlerFunc(h.HandleTake)))
+	http.Handle("/fund", h.MethodGet(http.HandlerFunc(h.HandleFund)))
+	http.Handle("/balance", h.MethodGet(http.HandlerFunc(h.HandleBalance)))
+	http.Handle("/announceTournament", h.MethodGet(http.HandlerFunc(h.HandleAnnounce)))
+	http.Handle("/joinTournament", h.MethodGet(http.HandlerFunc(h.HandleJoin)))
+	http.Handle("/resultTournament", h.MethodPost(h.CntTypeJson(http.HandlerFunc(h.HandleResult))))
+	http.Handle("/reset", h.MethodGet(http.HandlerFunc(h.HandleReset)))
 
-	fmt.Printf("Listening on port %d\n", handler.DEPLOY_PORT)
-	http.ListenAndServe(fmt.Sprintf(":%d", handler.DEPLOY_PORT), nil)
+	fmt.Printf("Listening on port %d\n", h.DEPLOY_PORT)
+	http.ListenAndServe(fmt.Sprintf(":%d", h.DEPLOY_PORT), nil)
 }

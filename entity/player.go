@@ -1,10 +1,5 @@
 package entity
 
-type PlayerBalanceResponse struct {
-	Id      string  `json:"playerId"`
-	Balance float32 `json:"balance"`
-}
-
 type Player struct {
 	id      string
 	balance float32

@@ -1,4 +1,4 @@
-package controller
+package database
 
 import (
 	"database/sql"
@@ -9,9 +9,8 @@ import (
 )
 
 var (
-	connectorSingleton *DBConnector
-	connectorError     error
-	connectorOnce      sync.Once
+	conn *DBConnector
+	resetMutex sync.RWMutex
 )
 
 type DBConnector struct {
@@ -23,7 +22,6 @@ func newConnector() (*DBConnector, error) {
 	if err != nil {
 		return nil, err
 	}
-
 
 	// create tables if they don't exist yet
 	if _, err = db.Exec(CREATE_PLAYERS_TABLE); err != nil {
@@ -54,7 +52,9 @@ func newConnector() (*DBConnector, error) {
 	return &DBConnector{db}, nil
 }
 
-func (conn *DBConnector) Reset() (e error) {
+func Reset() (e error) {
+	resetMutex.Lock()
+	defer resetMutex.Unlock()
 	for _, table := range STS_TABLES {
 		if _, err := conn.Exec(`DELETE FROM ` + table); err != nil {
 			e = err
@@ -63,10 +63,11 @@ func (conn *DBConnector) Reset() (e error) {
 	return e
 }
 
-func GetConnector() (*DBConnector, error) {
-	connectorOnce.Do(func() {
-		connectorSingleton, connectorError = newConnector()
-
-	})
-	return connectorSingleton, connectorError
+func init() {
+	log.Println("init connector.go")
+	var err error
+	conn, err = newConnector()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
