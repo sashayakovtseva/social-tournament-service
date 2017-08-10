@@ -8,13 +8,13 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/take", handler.GetHandler(handler.HandleTake))
-	http.HandleFunc("/fund", handler.GetHandler(handler.HandleFund))
-	http.HandleFunc("/balance", handler.GetHandler(handler.HandleBalance))
-	http.HandleFunc("/announceTournament", handler.GetHandler(handler.HandleAnnounce))
-	http.HandleFunc("/joinTournament", handler.GetHandler(handler.HandleJoin))
-	http.HandleFunc("/resultTournament", handler.PostJsonHandler(handler.HandleResult))
-	http.HandleFunc("/reset", handler.GetHandler(handler.HandleReset))
+	http.Handle("/take", handler.GetHandler(http.HandlerFunc(handler.HandleTake)))
+	http.Handle("/fund", handler.GetHandler(http.HandlerFunc(handler.HandleFund)))
+	http.Handle("/balance", handler.GetHandler(http.HandlerFunc(handler.HandleBalance)))
+	http.Handle("/announceTournament", handler.GetHandler(http.HandlerFunc(handler.HandleAnnounce)))
+	http.Handle("/joinTournament", handler.GetHandler(http.HandlerFunc(handler.HandleJoin)))
+	http.Handle("/resultTournament", handler.PostJsonHandler(http.HandlerFunc(handler.HandleResult)))
+	http.Handle("/reset", handler.GetHandler(http.HandlerFunc(handler.HandleReset)))
 
 	fmt.Printf("Listening on port %d\n", handler.DEPLOY_PORT)
 	http.ListenAndServe(fmt.Sprintf(":%d", handler.DEPLOY_PORT), nil)

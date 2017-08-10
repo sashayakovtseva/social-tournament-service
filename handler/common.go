@@ -19,7 +19,7 @@ func parsePointsParam(p string) (float32, error) {
 	return float32(points), nil
 }
 
-func GetHandler(handler http.HandlerFunc) http.HandlerFunc {
+func GetHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "", http.StatusMethodNotAllowed)
@@ -29,7 +29,7 @@ func GetHandler(handler http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func PostJsonHandler(handler http.HandlerFunc) http.HandlerFunc {
+func PostJsonHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "", http.StatusMethodNotAllowed)
