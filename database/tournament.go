@@ -192,7 +192,7 @@ func (tC *TournamentConnector) SelectBackPlayers(tournamentId, playerId string) 
 	var balance float32
 	for rows.Next() {
 		rows.Scan(&backerId, &balance)
-		backers = append(backers, entity.NewPlayer(playerId, balance))
+		backers = append(backers, entity.NewPlayer(backerId, balance))
 	}
 	return backers, nil
 }
