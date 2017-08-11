@@ -51,14 +51,14 @@ func CntTypeJson(handler http.Handler) http.Handler {
 	})
 }
 
-func HandleReset(_ http.ResponseWriter, _ *http.Request) error {
-	return controller.Reset()
-}
-
 func HandleWithErrWrap(handler HandleFuncWithErr) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := handler(w, r); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 	})
+}
+
+func HandleReset(_ http.ResponseWriter, r *http.Request) error {
+	return controller.Reset(r.Context())
 }

@@ -28,7 +28,7 @@ func HandleTake(_ http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	playerController := controller.GetPlayerController()
-	return playerController.Take(playerId, points)
+	return playerController.Take(r.Context(), playerId, points)
 }
 
 func HandleFund(_ http.ResponseWriter, r *http.Request) error {
@@ -39,7 +39,7 @@ func HandleFund(_ http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	playerController := controller.GetPlayerController()
-	return playerController.Fund(playerId, points)
+	return playerController.Fund(r.Context(), playerId, points)
 }
 
 func HandleBalance(w http.ResponseWriter, r *http.Request) error {
@@ -47,7 +47,7 @@ func HandleBalance(w http.ResponseWriter, r *http.Request) error {
 	playerId := params.Get(PLAYER_ID_PARAM)
 	playerController := controller.GetPlayerController()
 	var balance float32
-	balance, err := playerController.Balance(playerId)
+	balance, err := playerController.Balance(r.Context(), playerId)
 	if err != nil {
 		return err
 	}

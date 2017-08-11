@@ -22,7 +22,7 @@ func HandleAnnounce(_ http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	tournamentController := controller.GetTournamentController()
-	return tournamentController.Announce(tournamentId, deposit)
+	return tournamentController.Announce(r.Context(), tournamentId, deposit)
 }
 
 func HandleJoin(_ http.ResponseWriter, r *http.Request) error {
@@ -31,7 +31,7 @@ func HandleJoin(_ http.ResponseWriter, r *http.Request) error {
 	playerId := params.Get(PLAYER_ID_PARAM)
 	backers := params[BACKER_ID_PARAM]
 	tournamentController := controller.GetTournamentController()
-	return tournamentController.JoinTournament(tournamentId, playerId, backers)
+	return tournamentController.JoinTournament(r.Context(), tournamentId, playerId, backers)
 }
 
 func HandleResult(_ http.ResponseWriter, r *http.Request) error {
@@ -41,5 +41,5 @@ func HandleResult(_ http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	tournamentController := controller.GetTournamentController()
-	return tournamentController.Result(requestBody)
+	return tournamentController.Result(r.Context(), requestBody)
 }

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -24,7 +25,7 @@ func GetTournamentController() *TournamentController {
 	return tournControllerSingleton
 }
 
-func (tC *TournamentController) Announce(tournamentId string, deposit float32) error {
+func (tC *TournamentController) Announce(ctx context.Context, tournamentId string, deposit float32) error {
 	tC.lock.Lock()
 	defer tC.lock.Unlock()
 
@@ -35,7 +36,7 @@ func (tC *TournamentController) Announce(tournamentId string, deposit float32) e
 	return db.TournamentConn.Create(entity.NewTournament(tournamentId, deposit, false))
 }
 
-func (tC *TournamentController) Result(tournamentResult *entity.ResultTournamentRequest) error {
+func (tC *TournamentController) Result(ctx context.Context, tournamentResult *entity.ResultTournamentRequest) error {
 	tC.lock.Lock()
 	defer tC.lock.Unlock()
 
@@ -66,7 +67,7 @@ func (tC *TournamentController) Result(tournamentResult *entity.ResultTournament
 	return db.TournamentConn.UpdateResult(tournament, involved)
 }
 
-func (tC *TournamentController) JoinTournament(tournamentId, playerId string, backersId []string) error {
+func (tC *TournamentController) JoinTournament(ctx context.Context, tournamentId, playerId string, backersId []string) error {
 	tC.lock.Lock()
 	defer tC.lock.Unlock()
 

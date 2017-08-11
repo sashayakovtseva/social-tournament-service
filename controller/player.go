@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"sync"
+	"context"
 
 	db "github.com/sashayakovtseva/social-tournament-service/database"
 	"github.com/sashayakovtseva/social-tournament-service/entity"
@@ -24,7 +25,7 @@ func GetPlayerController() *PlayerController {
 	return playerControllerSingleton
 }
 
-func (pC *PlayerController) Take(playerId string, points float32) error {
+func (pC *PlayerController) Take(ctx context.Context, playerId string, points float32) error {
 	pC.lock.Lock()
 	defer pC.lock.Unlock()
 
@@ -39,7 +40,7 @@ func (pC *PlayerController) Take(playerId string, points float32) error {
 	return errors.New("not enough points")
 }
 
-func (pC *PlayerController) Fund(playerId string, points float32) error {
+func (pC *PlayerController) Fund(ctx context.Context, playerId string, points float32) error {
 	pC.lock.Lock()
 	defer pC.lock.Unlock()
 
@@ -51,7 +52,7 @@ func (pC *PlayerController) Fund(playerId string, points float32) error {
 	return db.PlayerConn.Update(player)
 }
 
-func (pC *PlayerController) Balance(playerId string) (float32, error) {
+func (pC *PlayerController) Balance(ctx context.Context, playerId string) (float32, error) {
 	player := db.PlayerConn.Read(playerId)
 	if player == nil {
 		return 0, errors.New("no such player")

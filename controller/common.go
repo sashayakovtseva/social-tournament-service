@@ -1,7 +1,11 @@
 package controller
 
-import "github.com/sashayakovtseva/social-tournament-service/database"
+import (
+	"context"
 
-func Reset() (e error) {
+	"github.com/sashayakovtseva/social-tournament-service/database"
+)
+
+func Reset(ctx context.Context) (e error) {
 	return database.Reset()
 }
