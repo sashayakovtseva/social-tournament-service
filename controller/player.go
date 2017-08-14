@@ -1,9 +1,9 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"sync"
-	"context"
 
 	db "github.com/sashayakovtseva/social-tournament-service/database"
 	"github.com/sashayakovtseva/social-tournament-service/entity"

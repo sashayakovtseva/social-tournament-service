@@ -194,7 +194,7 @@ func (tC *TournamentConnector) SelectBackPlayers(tournamentId, playerId string) 
 		rows.Scan(&backerId, &balance)
 		backers = append(backers, entity.NewPlayer(backerId, balance))
 	}
-	return backers, nil
+	return backers, rows.Err()
 }
 
 func (tC *TournamentConnector) SelectParticipants(tournamentId string) ([]*entity.Player, [][]*entity.Player, error) {
@@ -221,7 +221,7 @@ func (tC *TournamentConnector) SelectParticipants(tournamentId string) ([]*entit
 		participants = append(participants, entity.NewPlayer(playerId, balance))
 		backPlayers = append(backPlayers, backers)
 	}
-	return participants, backPlayers, nil
+	return participants, backPlayers, rows.Err()
 }
 
 func (tC *TournamentConnector) UpdateJoin(tournament *entity.Tournament, player *entity.Player, backers []*entity.Player) error {
