@@ -2,55 +2,81 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
+	"github.com/mattn/go-sqlite3"
 	"github.com/sashayakovtseva/social-tournament-service/entity"
 )
 
 var (
-	PlayerConn *PlayerConnector
+	PlayerConn             *PlayerConnector
+	ErrNoSuchPlayer        = errors.New("no such player")
+	ErrPlayerAlreadyExists = errors.New("player already exists")
+	ErrNotEnoughPoints     = errors.New("not enough points")
 )
 
 type PlayerConnector struct {
-	preparedInsert *sql.Stmt
-	preparedUpdate *sql.Stmt
-	preparedSelect *sql.Stmt
+	insert *sql.Stmt
+	update *sql.Stmt
+	slct   *sql.Stmt
+	take   *sql.Stmt
+	fund   *sql.Stmt
 }
 
 func newPlayerConnector() (*PlayerConnector, error) {
 	var err error
 	playerConnector := new(PlayerConnector)
-	playerConnector.preparedInsert, err = conn.Prepare(fmt.Sprintf(`INSERT INTO %s(%s,%s) values(?,?)`,
+	playerConnector.insert, err = conn.Prepare(fmt.Sprintf(`INSERT INTO %s(%s,%s) values(?,?)`,
 		PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME, BALANCE_COL_NAME))
 	if err != nil {
 		playerConnector.Close()
 		return nil, err
 	}
-	playerConnector.preparedUpdate, err = conn.Prepare(fmt.Sprintf(`UPDATE %s SET %s = ? WHERE %s = ?`,
+	playerConnector.update, err = conn.Prepare(fmt.Sprintf(`UPDATE %s SET %s = ? WHERE %s = ?`,
 		PLAYERS_TABLE_NAME, BALANCE_COL_NAME, PLAYER_ID_COL_NAME))
 	if err != nil {
 		playerConnector.Close()
 		return nil, err
 	}
-	playerConnector.preparedSelect, err = conn.Prepare(fmt.Sprintf(`SELECT %s, %s FROM %s WHERE %s = ?`,
+	playerConnector.fund, err = conn.Prepare(fmt.Sprintf(`UPDATE %s SET %s = %s + ? WHERE %s = ?`,
+		PLAYERS_TABLE_NAME, BALANCE_COL_NAME, BALANCE_COL_NAME, PLAYER_ID_COL_NAME))
+	if err != nil {
+		playerConnector.Close()
+		return nil, err
+	}
+	playerConnector.take, err = conn.Prepare(fmt.Sprintf(`UPDATE %s SET %s = %s - ? WHERE %s = ?`,
+		PLAYERS_TABLE_NAME, BALANCE_COL_NAME, BALANCE_COL_NAME, PLAYER_ID_COL_NAME))
+	if err != nil {
+		playerConnector.Close()
+		return nil, err
+	}
+	playerConnector.slct, err = conn.Prepare(fmt.Sprintf(`SELECT %s, %s FROM %s WHERE %s = ?`,
 		PLAYER_ID_COL_NAME, BALANCE_COL_NAME, PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME))
 	if err != nil {
 		playerConnector.Close()
 		return nil, err
 	}
+
 	return playerConnector, nil
 }
 
 func (pC *PlayerConnector) Close() {
-	if pC.preparedInsert != nil {
-		pC.preparedInsert.Close()
+	if pC.insert != nil {
+		pC.insert.Close()
 	}
-	if pC.preparedSelect != nil {
-		pC.preparedSelect.Close()
+	if pC.slct != nil {
+		pC.slct.Close()
 	}
-	if pC.preparedUpdate != nil {
-		pC.preparedUpdate.Close()
+	if pC.update != nil {
+		pC.update.Close()
+	}
+	if pC.take != nil {
+		pC.take.Close()
+	}
+	if pC.fund != nil {
+		pC.fund.Close()
 	}
 }
 
@@ -58,7 +84,13 @@ func (pC *PlayerConnector) Create(player *entity.Player) error {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
-	_, err := pC.preparedInsert.Exec(player.Id(), player.Balance())
+	_, err := pC.insert.Exec(player.Id(), player.Balance())
+	if err == nil {
+		return nil
+	}
+	if err := err.(sqlite3.Error); err.Code == sqlite3.ErrConstraint {
+		return ErrPlayerAlreadyExists
+	}
 	return err
 }
 
@@ -68,11 +100,45 @@ func (pC *PlayerConnector) Read(id string) *entity.Player {
 
 	var playerId string
 	var balance float32
-	err := pC.preparedSelect.QueryRow(id).Scan(&playerId, &balance)
+	err := pC.slct.QueryRow(id).Scan(&playerId, &balance)
 	if err != nil {
 		return nil
 	}
 	return entity.NewPlayer(playerId, balance)
+}
+
+func (pC *PlayerConnector) Take(playerId string, points float32) error {
+	resetMutex.RLock()
+	defer resetMutex.RUnlock()
+
+	r, err := pC.take.Exec(points, playerId)
+	if err == nil {
+		return nil
+	}
+	if err := err.(sqlite3.Error); err.Code == sqlite3.ErrConstraint {
+		return ErrNotEnoughPoints
+	}
+	if err != nil {
+		return err
+	}
+	if n, _ := r.RowsAffected(); n == 0 {
+		return ErrNoSuchPlayer
+	}
+	return nil
+}
+
+func (pC *PlayerConnector) Fund(playerId string, points float32) error {
+	resetMutex.RLock()
+	defer resetMutex.RUnlock()
+
+	r, err := pC.fund.Exec(points, playerId)
+	if err != nil {
+		return err
+	}
+	if n, _ := r.RowsAffected(); n == 0 {
+		return ErrNoSuchPlayer
+	}
+	return nil
 }
 
 func (pC *PlayerConnector) Update(players ...*entity.Player) error {
@@ -83,7 +149,7 @@ func (pC *PlayerConnector) Update(players ...*entity.Player) error {
 	if err != nil {
 		return err
 	}
-	preparedUpdateTx := tx.Stmt(pC.preparedUpdate)
+	preparedUpdateTx := tx.Stmt(pC.update)
 	for _, player := range players {
 		_, err := preparedUpdateTx.Exec(player.Balance(), player.Id())
 		if err != nil {
@@ -98,7 +164,7 @@ func (pC *PlayerConnector) UpdateWithTx(tx *sql.Tx, players ...*entity.Player) e
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
-	preparedUpdateTx := tx.Stmt(pC.preparedUpdate)
+	preparedUpdateTx := tx.Stmt(pC.update)
 	for _, player := range players {
 		_, err := preparedUpdateTx.Exec(player.Balance(), player.Id())
 		if err != nil {
@@ -109,7 +175,6 @@ func (pC *PlayerConnector) UpdateWithTx(tx *sql.Tx, players ...*entity.Player) e
 }
 
 func init() {
-	log.Println("init player.go")
 	var err error
 	PlayerConn, err = newPlayerConnector()
 	if err != nil {

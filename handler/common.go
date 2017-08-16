@@ -9,6 +9,7 @@ import (
 )
 
 type HandleFuncWithErr func(http.ResponseWriter, *http.Request) error
+type Middleware func(handler http.Handler) http.Handler
 
 func parsePointsParam(p string) (float32, error) {
 	points, err := strconv.ParseFloat(p, 32)
@@ -61,4 +62,12 @@ func HandleWithErrWrap(handler HandleFuncWithErr) http.Handler {
 
 func HandleReset(_ http.ResponseWriter, r *http.Request) error {
 	return controller.Reset(r.Context())
+}
+
+func Wrap(handler HandleFuncWithErr, middleware ...Middleware) http.Handler {
+	wrapped := HandleWithErrWrap(handler)
+	for _, m := range middleware {
+		wrapped = m(wrapped)
+	}
+	return wrapped
 }

@@ -260,7 +260,6 @@ func (tC *TournamentConnector) UpdateJoin(tournament *entity.Tournament, player 
 }
 
 func init() {
-	log.Println("init tournament.go")
 	var err error
 	TournamentConn, err = newTournamentConnector()
 	if err != nil {

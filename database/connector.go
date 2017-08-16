@@ -64,7 +64,6 @@ func Reset() (e error) {
 }
 
 func init() {
-	log.Println("init connector.go")
 	var err error
 	conn, err = newConnector()
 	if err != nil {

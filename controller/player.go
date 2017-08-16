@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"context"
-	"errors"
 	"sync"
 
 	db "github.com/sashayakovtseva/social-tournament-service/database"
@@ -10,52 +8,87 @@ import (
 )
 
 var (
-	playerControllerSingleton *PlayerController
-	playerControllerOnce      sync.Once
+	pCSingleton *PlayerController
+	pCOnce      sync.Once
 )
 
+const (
+	OP_TAKE = iota
+	OP_FUND
+)
+
+type playerJob struct {
+	playerId string
+	op       int
+	points   float32
+}
+
 type PlayerController struct {
-	lock sync.Mutex
+	lock       sync.Mutex
+	done       chan struct{}
+	jobs       chan playerJob
+	jobResults chan error
 }
 
 func GetPlayerController() *PlayerController {
-	playerControllerOnce.Do(func() {
-		playerControllerSingleton = new(PlayerController)
+	pCOnce.Do(func() {
+		pCSingleton = new(PlayerController)
+		pCSingleton.jobs = make(chan playerJob)
+		pCSingleton.jobResults = make(chan error)
+
+		go pCSingleton.listenUpdate()
 	})
-	return playerControllerSingleton
+	return pCSingleton
 }
 
-func (pC *PlayerController) Take(ctx context.Context, playerId string, points float32) error {
-	pC.lock.Lock()
-	defer pC.lock.Unlock()
-
-	player := db.PlayerConn.Read(playerId)
-	if player == nil {
-		return errors.New("no such player")
-	}
-	if player.Take(points) {
-		db.PlayerConn.Update(player)
-		return nil
-	}
-	return errors.New("not enough points")
+func (pC *PlayerController) Read(playerId string) chan *entity.Player {
+	player := make(chan *entity.Player, 1)
+	go func() {
+		player <- db.PlayerConn.Read(playerId)
+	}()
+	return player
 }
 
-func (pC *PlayerController) Fund(ctx context.Context, playerId string, points float32) error {
-	pC.lock.Lock()
-	defer pC.lock.Unlock()
-
-	player := db.PlayerConn.Read(playerId)
-	if player == nil {
-		return db.PlayerConn.Create(entity.NewPlayer(playerId, points))
-	}
-	player.Fund(points)
-	return db.PlayerConn.Update(player)
+func (pC *PlayerController) Fund(playerId string, points float32) chan error {
+	err := make(chan error, 1)
+	go func() {
+		pC.jobs <- playerJob{playerId, OP_FUND, points}
+		e := <-pC.jobResults
+		if e == db.ErrNoSuchPlayer {
+			err <- db.PlayerConn.Create(entity.NewPlayer(playerId, points))
+			return
+		}
+	}()
+	return err
 }
 
-func (pC *PlayerController) Balance(ctx context.Context, playerId string) (float32, error) {
-	player := db.PlayerConn.Read(playerId)
-	if player == nil {
-		return 0, errors.New("no such player")
+func (pC *PlayerController) Take(playerId string, points float32) chan error {
+	err := make(chan error, 1)
+	go func() {
+		pC.jobs <- playerJob{playerId, OP_TAKE, points}
+		err <- <-pC.jobResults
+	}()
+	return err
+}
+
+func (pC *PlayerController) Close() {
+	close(pC.done)
+}
+
+// only one goroutine executes take & fund
+// no locks
+func (pC *PlayerController) listenUpdate() {
+	for {
+		select {
+		case <-pC.done:
+			return
+		case job := <-pC.jobs:
+			switch job.op {
+			case OP_TAKE:
+				pC.jobResults <- db.PlayerConn.Take(job.playerId, job.points)
+			case OP_FUND:
+				pC.jobResults <- db.PlayerConn.Fund(job.playerId, job.points)
+			}
+		}
 	}
-	return player.Balance(), nil
 }
