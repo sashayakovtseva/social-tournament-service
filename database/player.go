@@ -139,25 +139,6 @@ func (pC *PlayerConnector) Fund(playerId string, points float32) error {
 	return nil
 }
 
-func (pC *PlayerConnector) Update(players ...*entity.Player) error {
-	resetMutex.RLock()
-	defer resetMutex.RUnlock()
-
-	tx, err := conn.Begin()
-	if err != nil {
-		return err
-	}
-	preparedUpdateTx := tx.Stmt(pC.update)
-	for _, player := range players {
-		_, err := preparedUpdateTx.Exec(player.Balance(), player.Id())
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-	return tx.Commit()
-}
-
 func (pC *PlayerConnector) UpdateWithTx(tx *sql.Tx, players ...*entity.Player) error {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
