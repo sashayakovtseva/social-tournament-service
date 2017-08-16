@@ -112,15 +112,13 @@ func (pC *PlayerConnector) Take(playerId string, points float32) error {
 	defer resetMutex.RUnlock()
 
 	r, err := pC.take.Exec(points, playerId)
-	if err == nil {
-		return nil
-	}
-	if err := err.(sqlite3.Error); err.Code == sqlite3.ErrConstraint {
-		return ErrNotEnoughPoints
-	}
 	if err != nil {
+		if err := err.(sqlite3.Error); err.Code == sqlite3.ErrConstraint {
+			return ErrNotEnoughPoints
+		}
 		return err
 	}
+
 	if n, _ := r.RowsAffected(); n == 0 {
 		return ErrNoSuchPlayer
 	}

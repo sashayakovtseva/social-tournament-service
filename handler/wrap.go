@@ -1,26 +1,17 @@
 package handler
 
 import (
-	"errors"
+	"context"
+	"math/rand"
 	"net/http"
-	"strconv"
+	"time"
 
 	"github.com/sashayakovtseva/social-tournament-service/controller"
 )
 
 type HandleFuncWithErr func(http.ResponseWriter, *http.Request) error
 type Middleware func(handler http.Handler) http.Handler
-
-func parsePointsParam(p string) (float32, error) {
-	points, err := strconv.ParseFloat(p, 32)
-	if err != nil {
-		return 0, errors.New("unable to parse points")
-	}
-	if points < 0 {
-		return 0, errors.New("points should be a non negative value")
-	}
-	return float32(points), nil
-}
+type key string
 
 func MethodGet(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +48,25 @@ func HandleWithErrWrap(handler HandleFuncWithErr) http.Handler {
 		if err := handler(w, r); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
+	})
+}
+
+const requestIDKey = key("reqId")
+
+func CtxWithReqId(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		rand.Seed(time.Now().UnixNano())
+		ctx = context.WithValue(ctx, requestIDKey, rand.Int63())
+		handler.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func LogElapsedTime(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		handler.ServeHTTP(w, r)
+		log(r.Context(), r.URL.String(), "elapsed time", time.Since(start))
 	})
 }
 

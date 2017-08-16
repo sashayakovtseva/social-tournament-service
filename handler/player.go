@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/sashayakovtseva/social-tournament-service/controller"
 )
@@ -24,9 +23,6 @@ type PlayerBalanceResponse struct {
 
 func HandleTake(_ http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
-	log(ctx, "take started")
-	defer log(ctx, "take ended")
-
 	params := r.URL.Query()
 	playerId := params.Get(PLAYER_ID_PARAM)
 	points, err := parsePointsParam(params.Get(POINTS_PARAM))
@@ -47,9 +43,6 @@ func HandleTake(_ http.ResponseWriter, r *http.Request) error {
 
 func HandleFund(_ http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
-	log(ctx, "fund started")
-	defer log(ctx, "fund ended")
-
 	params := r.URL.Query()
 	playerId := params.Get(PLAYER_ID_PARAM)
 	points, err := parsePointsParam(params.Get(POINTS_PARAM))
@@ -69,12 +62,7 @@ func HandleFund(_ http.ResponseWriter, r *http.Request) error {
 }
 
 func HandleBalance(w http.ResponseWriter, r *http.Request) error {
-	start := time.Now()
 	ctx := r.Context()
-	log(ctx, "balance started")
-	defer func() {
-		log(ctx, "balance ended, time elapsed", time.Since(start))
-	}()
 	params := r.URL.Query()
 	playerId := params.Get(PLAYER_ID_PARAM)
 	playerController := controller.GetPlayerController()
