@@ -24,7 +24,6 @@ type playerJob struct {
 }
 
 type PlayerController struct {
-	lock       sync.Mutex
 	done       chan struct{}
 	jobs       chan playerJob
 	jobResults chan error
@@ -33,6 +32,7 @@ type PlayerController struct {
 func GetPlayerController() *PlayerController {
 	pCOnce.Do(func() {
 		pCSingleton = new(PlayerController)
+		pCSingleton.done = make(chan struct{})
 		pCSingleton.jobs = make(chan playerJob)
 		pCSingleton.jobResults = make(chan error)
 

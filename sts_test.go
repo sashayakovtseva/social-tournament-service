@@ -35,13 +35,13 @@ func post(url, cntType string, body io.Reader) error {
 }
 
 func TestServer(t *testing.T) {
-	http.Handle("/take", h.MethodGet(h.HandleWithErrWrap(h.HandleTake)))
-	http.Handle("/fund", h.MethodGet(h.HandleWithErrWrap(h.HandleFund)))
-	http.Handle("/balance", h.MethodGet(h.HandleWithErrWrap(h.HandleBalance)))
-	http.Handle("/announceTournament", h.MethodGet(h.HandleWithErrWrap(h.HandleAnnounce)))
-	http.Handle("/joinTournament", h.MethodGet(h.HandleWithErrWrap(h.HandleJoin)))
-	http.Handle("/resultTournament", h.MethodPost(h.CntTypeJson(h.HandleWithErrWrap(h.HandleResult))))
-	http.Handle("/reset", h.MethodGet(h.HandleWithErrWrap(h.HandleReset)))
+	http.Handle("/take", h.FilterGet(h.HandleWithErrWrap(h.HandleTake)))
+	http.Handle("/fund", h.FilterGet(h.HandleWithErrWrap(h.HandleFund)))
+	http.Handle("/balance", h.FilterGet(h.HandleWithErrWrap(h.HandleBalance)))
+	http.Handle("/announceTournament", h.FilterGet(h.HandleWithErrWrap(h.HandleAnnounce)))
+	http.Handle("/joinTournament", h.FilterGet(h.HandleWithErrWrap(h.HandleJoin)))
+	http.Handle("/resultTournament", h.MethodPost(h.FilterJson(h.HandleWithErrWrap(h.HandleResult))))
+	http.Handle("/reset", h.FilterGet(h.HandleWithErrWrap(h.HandleReset)))
 
 	ts := httptest.NewServer(http.DefaultServeMux)
 	defer ts.Close()

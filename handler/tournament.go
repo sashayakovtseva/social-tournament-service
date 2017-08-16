@@ -15,6 +15,7 @@ const (
 )
 
 func HandleAnnounce(_ http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
 	params := r.URL.Query()
 	tournamentId := params.Get(TOURNAMENT_ID_PARAM)
 	deposit, err := parsePointsParam(params.Get(DEPOSIT_PARAM))
@@ -22,7 +23,15 @@ func HandleAnnounce(_ http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	tournamentController := controller.GetTournamentController()
-	return tournamentController.Announce(r.Context(), tournamentId, deposit)
+
+	select {
+	case <-ctx.Done():
+		err := ctx.Err()
+		log(ctx, err.Error())
+		return err
+	case err := <-tournamentController.Announce(tournamentId, deposit):
+		return err
+	}
 }
 
 func HandleJoin(_ http.ResponseWriter, r *http.Request) error {

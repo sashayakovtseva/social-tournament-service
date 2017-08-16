@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	tournControllerSingleton *TournamentController
-	tournControllerOnce      sync.Once
+	tCSingleton *TournamentController
+	tCOnce      sync.Once
 )
 
 type TournamentController struct {
@@ -19,22 +19,21 @@ type TournamentController struct {
 }
 
 func GetTournamentController() *TournamentController {
-	tournControllerOnce.Do(func() {
-		tournControllerSingleton = new(TournamentController)
+	tCOnce.Do(func() {
+		tCSingleton = new(TournamentController)
 	})
-	return tournControllerSingleton
+	return tCSingleton
 }
 
-func (tC *TournamentController) Announce(ctx context.Context, tournamentId string, deposit float32) error {
-	tC.lock.Lock()
-	defer tC.lock.Unlock()
-
-	tournament := db.TournamentConn.Read(tournamentId)
-	if tournament != nil {
-		return errors.New("tournament already exists")
-	}
-	return db.TournamentConn.Create(entity.NewTournament(tournamentId, deposit, false))
+func (tC *TournamentController) Announce(tournamentId string, deposit float32) chan error {
+	err := make(chan error, 1)
+	go func() {
+		err <- db.TournamentConn.Create(entity.NewTournament(tournamentId, deposit, false))
+	}()
+	return err
 }
+
+func (tC *TournamentController) Close() {}
 
 func (tC *TournamentController) Result(ctx context.Context, tournamentResult *entity.ResultTournamentRequest) error {
 	tC.lock.Lock()

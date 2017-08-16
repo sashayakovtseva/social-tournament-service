@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	conn *DBConnector
+	conn       *DBConnector
 	resetMutex sync.RWMutex
 )
 
@@ -61,6 +61,12 @@ func Reset() (e error) {
 		}
 	}
 	return e
+}
+
+func Close() {
+	conn.Close()
+	PlayerConn.Close()
+	TournamentConn.Close()
 }
 
 func init() {

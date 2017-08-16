@@ -13,7 +13,7 @@ type HandleFuncWithErr func(http.ResponseWriter, *http.Request) error
 type Middleware func(handler http.Handler) http.Handler
 type key string
 
-func MethodGet(handler http.Handler) http.Handler {
+func FilterGet(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "", http.StatusMethodNotAllowed)
@@ -33,7 +33,7 @@ func MethodPost(handler http.Handler) http.Handler {
 	})
 }
 
-func CntTypeJson(handler http.Handler) http.Handler {
+func FilterJson(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get(CONTENT_TYPE) != APPLICATION_JSON {
 			http.Error(w, "", http.StatusUnsupportedMediaType)
@@ -53,7 +53,7 @@ func HandleWithErrWrap(handler HandleFuncWithErr) http.Handler {
 
 const requestIDKey = key("reqId")
 
-func CtxWithReqId(handler http.Handler) http.Handler {
+func AddRequestId(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		rand.Seed(time.Now().UnixNano())

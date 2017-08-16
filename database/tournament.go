@@ -2,18 +2,21 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
+	"github.com/mattn/go-sqlite3"
 	"github.com/sashayakovtseva/social-tournament-service/entity"
 )
 
 var (
-	TournamentConn *TournamentConnector
+	TournamentConn             *TournamentConnector
+	ErrTournamentAlreadyExists = errors.New("tournament already exists")
 )
 
 type TournamentConnector struct {
-	preparedInsertTournament   *sql.Stmt
+	insert                     *sql.Stmt
 	preparedUpdateTournament   *sql.Stmt
 	preparedSelectTournament   *sql.Stmt
 	preparedJoinTournament     *sql.Stmt
@@ -25,7 +28,7 @@ type TournamentConnector struct {
 func newTournamentConnector() (*TournamentConnector, error) {
 	var err error
 	tournamentConn := new(TournamentConnector)
-	tournamentConn.preparedInsertTournament, err = conn.Prepare(fmt.Sprintf(`INSERT INTO %s(%s,%s) values(?,?)`,
+	tournamentConn.insert, err = conn.Prepare(fmt.Sprintf(`INSERT INTO %s(%s,%s) values(?,?)`,
 		TOURNAMENTS_TABLE_NAME, TOURNAMENT_ID_COL_NAME, DEPOSIT_COL_NAME))
 	if err != nil {
 		tournamentConn.Close()
@@ -77,8 +80,8 @@ func newTournamentConnector() (*TournamentConnector, error) {
 }
 
 func (tC *TournamentConnector) Close() {
-	if tC.preparedInsertTournament != nil {
-		tC.preparedInsertTournament.Close()
+	if tC.insert != nil {
+		tC.insert.Close()
 	}
 	if tC.preparedUpdateTournament != nil {
 		tC.preparedUpdateTournament.Close()
@@ -105,7 +108,13 @@ func (tC *TournamentConnector) Create(tournament *entity.Tournament) error {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
-	_, err := tC.preparedInsertTournament.Exec(tournament.Id(), tournament.Deposit())
+	_, err := tC.insert.Exec(tournament.Id(), tournament.Deposit())
+	if err == nil {
+		return nil
+	}
+	if err := err.(sqlite3.Error); err.Code == sqlite3.ErrConstraint {
+		return ErrTournamentAlreadyExists
+	}
 	return err
 }
 
