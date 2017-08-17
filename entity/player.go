@@ -15,17 +15,16 @@ func NewPlayer(id string, balance float32) *Player {
 func (p *Player) Take(points float32) bool {
 	if points > p.balance {
 		return false
-	} else {
-		p.balance -= points
-		return true
 	}
+	p.balance -= points
+	return true
 }
 
 func (p *Player) Fund(points float32) {
 	p.balance += points
 }
 
-func (p *Player) Id() string {
+func (p *Player) ID() string {
 	return p.id
 }
 

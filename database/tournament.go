@@ -29,49 +29,49 @@ func newTournamentConnector() (*TournamentConnector, error) {
 	var err error
 	tournamentConn := new(TournamentConnector)
 	tournamentConn.insert, err = conn.Prepare(fmt.Sprintf(`INSERT INTO %s(%s,%s) values(?,?)`,
-		TOURNAMENTS_TABLE_NAME, TOURNAMENT_ID_COL_NAME, DEPOSIT_COL_NAME))
+		tournamentsTableName, tournamentIDColName, depositColName))
 	if err != nil {
 		tournamentConn.Close()
 		return nil, err
 	}
 	tournamentConn.preparedUpdateTournament, err = conn.Prepare(fmt.Sprintf(`UPDATE %s SET %s = ? WHERE %s = ?`,
-		TOURNAMENTS_TABLE_NAME, FINISHED_COL_NAME, TOURNAMENT_ID_COL_NAME))
+		tournamentsTableName, finishedColName, tournamentIDColName))
 	if err != nil {
 		tournamentConn.Close()
 		return nil, err
 	}
 	tournamentConn.preparedSelectTournament, err = conn.Prepare(fmt.Sprintf(
 		`SELECT %s, %s, %s FROM %s WHERE %s = ?`,
-		TOURNAMENT_ID_COL_NAME, DEPOSIT_COL_NAME, FINISHED_COL_NAME, TOURNAMENTS_TABLE_NAME, TOURNAMENT_ID_COL_NAME))
+		tournamentIDColName, depositColName, finishedColName, tournamentsTableName, tournamentIDColName))
 	if err != nil {
 		tournamentConn.Close()
 		return nil, err
 	}
 	tournamentConn.preparedJoinTournament, err = conn.Prepare(fmt.Sprintf(`INSERT INTO %s(%s,%s) values(?,?)`,
-		P2T_TABLE_NAME, PLAYER_ID_COL_NAME, TOURNAMENT_ID_COL_NAME))
+		p2tTableName, playerIDColName, tournamentIDColName))
 	if err != nil {
 		tournamentConn.Close()
 		return nil, err
 	}
 	tournamentConn.preparedInsertBackPlayer, err = conn.Prepare(fmt.Sprintf(
 		`INSERT INTO %s(%s,%s, %s) values(?,?, ?)`,
-		P2B_TABLE_NAME, PLAYER_ID_COL_NAME, TOURNAMENT_ID_COL_NAME, BACKER_COL_NAME))
+		p2bTableName, playerIDColName, tournamentIDColName, backerColName))
 	if err != nil {
 		tournamentConn.Close()
 		return nil, err
 	}
 	tournamentConn.preparedSelectParticipants, err = conn.Prepare(fmt.Sprintf(
 		`SELECT %s, %s FROM %s INNER JOIN %s  USING (%s) WHERE %s = ?`,
-		PLAYER_ID_COL_NAME, BALANCE_COL_NAME, PLAYERS_TABLE_NAME, P2T_TABLE_NAME,
-		PLAYER_ID_COL_NAME, TOURNAMENT_ID_COL_NAME))
+		playerIDColName, balanceColNmae, playersTableName, p2tTableName,
+		playerIDColName, tournamentIDColName))
 	if err != nil {
 		tournamentConn.Close()
 		return nil, err
 	}
 	tournamentConn.preparedSelectBackers, err = conn.Prepare(fmt.Sprintf(
 		`SELECT %s.%s, %s FROM %s INNER JOIN %s ON %s.%s  = %s.%s WHERE %s = ? AND %s.%s = ?`,
-		PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME, BALANCE_COL_NAME, PLAYERS_TABLE_NAME, P2B_TABLE_NAME, P2B_TABLE_NAME,
-		BACKER_COL_NAME, PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME, TOURNAMENT_ID_COL_NAME, P2B_TABLE_NAME, PLAYER_ID_COL_NAME))
+		playersTableName, playerIDColName, balanceColNmae, playersTableName, p2bTableName, p2bTableName,
+		backerColName, playersTableName, playerIDColName, tournamentIDColName, p2bTableName, playerIDColName))
 	if err != nil {
 		tournamentConn.Close()
 		return nil, err
@@ -108,7 +108,7 @@ func (tC *TournamentConnector) Create(tournament *entity.Tournament) error {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
-	_, err := tC.insert.Exec(tournament.Id(), tournament.Deposit())
+	_, err := tC.insert.Exec(tournament.ID(), tournament.Deposit())
 	if err == nil {
 		return nil
 	}
@@ -122,14 +122,14 @@ func (tC *TournamentConnector) Read(id string) *entity.Tournament {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
-	var tournamentId string
+	var tournamentID string
 	var tournamentDeposit float32
 	var tournamentIsFinished bool
-	err := tC.preparedSelectTournament.QueryRow(id).Scan(&tournamentId, &tournamentDeposit, &tournamentIsFinished)
+	err := tC.preparedSelectTournament.QueryRow(id).Scan(&tournamentID, &tournamentDeposit, &tournamentIsFinished)
 	if err != nil {
 		return nil
 	}
-	return entity.NewTournament(tournamentId, tournamentDeposit, tournamentIsFinished)
+	return entity.NewTournament(tournamentID, tournamentDeposit, tournamentIsFinished)
 }
 
 func (tC *TournamentConnector) Update(tournaments ...*entity.Tournament) error {
@@ -142,7 +142,7 @@ func (tC *TournamentConnector) Update(tournaments ...*entity.Tournament) error {
 	}
 	preparedUpdateTx := tx.Stmt(tC.preparedUpdateTournament)
 	for _, t := range tournaments {
-		_, err := preparedUpdateTx.Exec(t.IsFinished(), t.Id())
+		_, err := preparedUpdateTx.Exec(t.IsFinished(), t.ID())
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -157,7 +157,7 @@ func (tC *TournamentConnector) UpdateWithTx(tx *sql.Tx, tournaments ...*entity.T
 
 	preparedUpdateTx := tx.Stmt(tC.preparedUpdateTournament)
 	for _, t := range tournaments {
-		_, err := preparedUpdateTx.Exec(t.IsFinished(), t.Id())
+		_, err := preparedUpdateTx.Exec(t.IsFinished(), t.ID())
 		if err != nil {
 			return err
 		}
@@ -186,48 +186,48 @@ func (tC *TournamentConnector) UpdateResult(tournament *entity.Tournament, playe
 	return tx.Commit()
 }
 
-func (tC *TournamentConnector) SelectBackPlayers(tournamentId, playerId string) ([]*entity.Player, error) {
+func (tC *TournamentConnector) SelectBackPlayers(tournamentID, playerID string) ([]*entity.Player, error) {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
 	var backers []*entity.Player
-	rows, err := tC.preparedSelectBackers.Query(tournamentId, playerId)
+	rows, err := tC.preparedSelectBackers.Query(tournamentID, playerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var backerId string
+	var backerID string
 	var balance float32
 	for rows.Next() {
-		rows.Scan(&backerId, &balance)
-		backers = append(backers, entity.NewPlayer(backerId, balance))
+		rows.Scan(&backerID, &balance)
+		backers = append(backers, entity.NewPlayer(backerID, balance))
 	}
 	return backers, rows.Err()
 }
 
-func (tC *TournamentConnector) SelectParticipants(tournamentId string) ([]*entity.Player, [][]*entity.Player, error) {
+func (tC *TournamentConnector) SelectParticipants(tournamentID string) ([]*entity.Player, [][]*entity.Player, error) {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
 	var participants []*entity.Player
 	var backPlayers [][]*entity.Player
 
-	rows, err := tC.preparedSelectParticipants.Query(tournamentId)
+	rows, err := tC.preparedSelectParticipants.Query(tournamentID)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer rows.Close()
 
-	var playerId string
+	var playerID string
 	var balance float32
 	for rows.Next() {
-		rows.Scan(&playerId, &balance)
-		backers, err := tC.SelectBackPlayers(tournamentId, playerId)
+		rows.Scan(&playerID, &balance)
+		backers, err := tC.SelectBackPlayers(tournamentID, playerID)
 		if err != nil {
 			return nil, nil, err
 		}
-		participants = append(participants, entity.NewPlayer(playerId, balance))
+		participants = append(participants, entity.NewPlayer(playerID, balance))
 		backPlayers = append(backPlayers, backers)
 	}
 	return participants, backPlayers, rows.Err()
@@ -252,14 +252,14 @@ func (tC *TournamentConnector) UpdateJoin(tournament *entity.Tournament, player 
 		return err
 	}
 
-	_, err = tx.Stmt(tC.preparedJoinTournament).Exec(player.Id(), tournament.Id())
+	_, err = tx.Stmt(tC.preparedJoinTournament).Exec(player.ID(), tournament.ID())
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	txPreparedBackPlayer := tx.Stmt(tC.preparedInsertBackPlayer)
 	for _, backer := range backers {
-		_, err := txPreparedBackPlayer.Exec(player.Id(), tournament.Id(), backer.Id())
+		_, err := txPreparedBackPlayer.Exec(player.ID(), tournament.ID(), backer.ID())
 		if err != nil {
 			tx.Rollback()
 			return err

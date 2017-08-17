@@ -9,16 +9,16 @@ import (
 )
 
 const (
-	TOURNAMENT_ID_PARAM = "tournamentId"
-	DEPOSIT_PARAM       = "deposit"
-	BACKER_ID_PARAM     = "backerId"
+	tournamentIDParam = "tournamentId"
+	depositParam      = "deposit"
+	backerIDParam     = "backerId"
 )
 
 func HandleAnnounce(_ http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	params := r.URL.Query()
-	tournamentId := params.Get(TOURNAMENT_ID_PARAM)
-	deposit, err := parsePointsParam(params.Get(DEPOSIT_PARAM))
+	tournamentID := params.Get(tournamentIDParam)
+	deposit, err := parsePointsParam(params.Get(depositParam))
 	if err != nil {
 		return err
 	}
@@ -29,18 +29,18 @@ func HandleAnnounce(_ http.ResponseWriter, r *http.Request) error {
 		err := ctx.Err()
 		log(ctx, err.Error())
 		return err
-	case err := <-tournamentController.Announce(tournamentId, deposit):
+	case err := <-tournamentController.Announce(tournamentID, deposit):
 		return err
 	}
 }
 
 func HandleJoin(_ http.ResponseWriter, r *http.Request) error {
 	params := r.URL.Query()
-	tournamentId := params.Get(TOURNAMENT_ID_PARAM)
-	playerId := params.Get(PLAYER_ID_PARAM)
-	backers := params[BACKER_ID_PARAM]
+	tournamentID := params.Get(tournamentIDParam)
+	playerID := params.Get(playerIDParam)
+	backers := params[backerIDParam]
 	tournamentController := controller.GetTournamentController()
-	return tournamentController.JoinTournament(r.Context(), tournamentId, playerId, backers)
+	return tournamentController.JoinTournament(r.Context(), tournamentID, playerID, backers)
 }
 
 func HandleResult(_ http.ResponseWriter, r *http.Request) error {

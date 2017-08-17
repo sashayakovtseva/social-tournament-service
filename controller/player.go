@@ -13,12 +13,12 @@ var (
 )
 
 const (
-	OP_TAKE = iota
-	OP_FUND
+	opTake = iota
+	opFund
 )
 
 type playerJob struct {
-	playerId string
+	playerID string
 	op       int
 	points   float32
 }
@@ -41,31 +41,31 @@ func GetPlayerController() *PlayerController {
 	return pCSingleton
 }
 
-func (pC *PlayerController) Read(playerId string) chan *entity.Player {
+func (pC *PlayerController) Read(playerID string) chan *entity.Player {
 	player := make(chan *entity.Player, 1)
 	go func() {
-		player <- db.PlayerConn.Read(playerId)
+		player <- db.PlayerConn.Read(playerID)
 	}()
 	return player
 }
 
-func (pC *PlayerController) Fund(playerId string, points float32) chan error {
+func (pC *PlayerController) Fund(playerID string, points float32) chan error {
 	err := make(chan error, 1)
 	go func() {
-		pC.jobs <- playerJob{playerId, OP_FUND, points}
+		pC.jobs <- playerJob{playerID, opFund, points}
 		e := <-pC.jobResults
 		if e == db.ErrNoSuchPlayer {
-			err <- db.PlayerConn.Create(entity.NewPlayer(playerId, points))
+			err <- db.PlayerConn.Create(entity.NewPlayer(playerID, points))
 			return
 		}
 	}()
 	return err
 }
 
-func (pC *PlayerController) Take(playerId string, points float32) chan error {
+func (pC *PlayerController) Take(playerID string, points float32) chan error {
 	err := make(chan error, 1)
 	go func() {
-		pC.jobs <- playerJob{playerId, OP_TAKE, points}
+		pC.jobs <- playerJob{playerID, opTake, points}
 		err <- <-pC.jobResults
 	}()
 	return err
@@ -84,10 +84,10 @@ func (pC *PlayerController) listenUpdate() {
 			return
 		case job := <-pC.jobs:
 			switch job.op {
-			case OP_TAKE:
-				pC.jobResults <- db.PlayerConn.Take(job.playerId, job.points)
-			case OP_FUND:
-				pC.jobResults <- db.PlayerConn.Fund(job.playerId, job.points)
+			case opTake:
+				pC.jobResults <- db.PlayerConn.Take(job.playerID, job.points)
+			case opFund:
+				pC.jobResults <- db.PlayerConn.Fund(job.playerID, job.points)
 			}
 		}
 	}

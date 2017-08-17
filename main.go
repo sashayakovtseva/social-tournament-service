@@ -18,44 +18,44 @@ func main() {
 
 	http.Handle("/take", h.Wrap(h.HandleTake,
 		h.LogElapsedTime,
-		h.AddRequestId,
+		h.AddRequestID,
 		h.FilterGet,
 	))
 	http.Handle("/fund", h.Wrap(h.HandleFund,
 		h.LogElapsedTime,
-		h.AddRequestId,
+		h.AddRequestID,
 		h.FilterGet,
 	))
 	http.Handle("/balance", h.Wrap(h.HandleBalance,
 		h.LogElapsedTime,
-		h.AddRequestId,
+		h.AddRequestID,
 		h.FilterGet,
 	))
 	http.Handle("/announceTournament", h.Wrap(h.HandleAnnounce,
 		h.LogElapsedTime,
-		h.AddRequestId,
+		h.AddRequestID,
 		h.FilterGet,
 	))
 	http.Handle("/joinTournament", h.Wrap(h.HandleJoin,
 		h.LogElapsedTime,
-		h.AddRequestId,
+		h.AddRequestID,
 		h.FilterGet,
 	))
 	http.Handle("/resultTournament", h.Wrap(h.HandleResult,
 		h.LogElapsedTime,
-		h.AddRequestId,
-		h.FilterJson,
+		h.AddRequestID,
+		h.FilterJSON,
 		h.MethodPost,
 	))
 	http.Handle("/reset", h.Wrap(h.HandleReset,
 		h.LogElapsedTime,
-		h.AddRequestId,
+		h.AddRequestID,
 		h.FilterGet,
 	))
 
-	server := http.Server{Addr: fmt.Sprintf(":%d", h.DEPLOY_PORT)}
+	server := http.Server{Addr: fmt.Sprintf(":%d", h.DeployPort)}
 	go func() {
-		fmt.Printf("Listening on port %d\n", h.DEPLOY_PORT)
+		fmt.Printf("Listening on port %d\n", h.DeployPort)
 		log.Print(server.ListenAndServe())
 	}()
 

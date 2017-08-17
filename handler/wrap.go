@@ -33,9 +33,9 @@ func MethodPost(handler http.Handler) http.Handler {
 	})
 }
 
-func FilterJson(handler http.Handler) http.Handler {
+func FilterJSON(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get(CONTENT_TYPE) != APPLICATION_JSON {
+		if r.Header.Get(contentType) != applicationJSON {
 			http.Error(w, "", http.StatusUnsupportedMediaType)
 		} else {
 			handler.ServeHTTP(w, r)
@@ -53,7 +53,7 @@ func HandleWithErrWrap(handler HandleFuncWithErr) http.Handler {
 
 const requestIDKey = key("reqId")
 
-func AddRequestId(handler http.Handler) http.Handler {
+func AddRequestID(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		rand.Seed(time.Now().UnixNano())

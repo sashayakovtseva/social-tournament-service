@@ -25,10 +25,10 @@ func GetTournamentController() *TournamentController {
 	return tCSingleton
 }
 
-func (tC *TournamentController) Announce(tournamentId string, deposit float32) chan error {
+func (tC *TournamentController) Announce(tournamentID string, deposit float32) chan error {
 	err := make(chan error, 1)
 	go func() {
-		err <- db.TournamentConn.Create(entity.NewTournament(tournamentId, deposit, false))
+		err <- db.TournamentConn.Create(entity.NewTournament(tournamentID, deposit, false))
 	}()
 	return err
 }
@@ -39,50 +39,50 @@ func (tC *TournamentController) Result(ctx context.Context, tournamentResult *en
 	tC.lock.Lock()
 	defer tC.lock.Unlock()
 
-	tournament := db.TournamentConn.Read(tournamentResult.Id)
+	tournament := db.TournamentConn.Read(tournamentResult.ID)
 	if tournament == nil {
 		return errors.New("no such tournament")
 	}
 	if tournament.IsFinished() {
 		return errors.New("tournament has finished already")
 	}
-	participants, backPlayers, err := db.TournamentConn.SelectParticipants(tournamentResult.Id)
+	participants, backPlayers, err := db.TournamentConn.SelectParticipants(tournamentResult.ID)
 	if err != nil {
 		return err
 	}
 	participantsSet := make(map[string]float32, len(participants))
 	for _, p := range participants {
-		participantsSet[p.Id()] = p.Balance()
+		participantsSet[p.ID()] = p.Balance()
 	}
 	winners := make(map[entity.Player]float32)
 	for _, winner := range tournamentResult.Winners {
-		if balance, ok := participantsSet[winner.Id]; !ok {
+		balance, ok := participantsSet[winner.ID]
+		if !ok {
 			return errors.New("winner is not a participant")
-		} else {
-			winners[*entity.NewPlayer(winner.Id, balance)] = winner.Prize
 		}
+		winners[*entity.NewPlayer(winner.ID, balance)] = winner.Prize
 	}
 	involved := tournament.Result(participants, backPlayers, winners)
 	return db.TournamentConn.UpdateResult(tournament, involved)
 }
 
-func (tC *TournamentController) JoinTournament(ctx context.Context, tournamentId, playerId string, backersId []string) error {
+func (tC *TournamentController) JoinTournament(ctx context.Context, tournamentID, playerID string, backersID []string) error {
 	tC.lock.Lock()
 	defer tC.lock.Unlock()
 
-	tournament := db.TournamentConn.Read(tournamentId)
+	tournament := db.TournamentConn.Read(tournamentID)
 	if tournament == nil {
 		return errors.New("no such tournament")
 	}
 	if tournament.IsFinished() {
 		return errors.New("tournament has finished already")
 	}
-	player := db.PlayerConn.Read(playerId)
+	player := db.PlayerConn.Read(playerID)
 	if player == nil {
 		return errors.New("no such player")
 	}
 	backPlayers := make([]*entity.Player, 0)
-	for _, backerId := range backersId {
+	for _, backerId := range backersID {
 		backer := db.PlayerConn.Read(backerId)
 		if backer == nil {
 			return errors.New("one or more backers are not found")

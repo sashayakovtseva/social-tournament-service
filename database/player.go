@@ -29,31 +29,31 @@ func newPlayerConnector() (*PlayerConnector, error) {
 	var err error
 	playerConnector := new(PlayerConnector)
 	playerConnector.insert, err = conn.Prepare(fmt.Sprintf(`INSERT INTO %s(%s,%s) values(?,?)`,
-		PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME, BALANCE_COL_NAME))
+		playersTableName, playerIDColName, balanceColNmae))
 	if err != nil {
 		playerConnector.Close()
 		return nil, err
 	}
 	playerConnector.update, err = conn.Prepare(fmt.Sprintf(`UPDATE %s SET %s = ? WHERE %s = ?`,
-		PLAYERS_TABLE_NAME, BALANCE_COL_NAME, PLAYER_ID_COL_NAME))
+		playersTableName, balanceColNmae, playerIDColName))
 	if err != nil {
 		playerConnector.Close()
 		return nil, err
 	}
 	playerConnector.fund, err = conn.Prepare(fmt.Sprintf(`UPDATE %s SET %s = %s + ? WHERE %s = ?`,
-		PLAYERS_TABLE_NAME, BALANCE_COL_NAME, BALANCE_COL_NAME, PLAYER_ID_COL_NAME))
+		playersTableName, balanceColNmae, balanceColNmae, playerIDColName))
 	if err != nil {
 		playerConnector.Close()
 		return nil, err
 	}
 	playerConnector.take, err = conn.Prepare(fmt.Sprintf(`UPDATE %s SET %s = %s - ? WHERE %s = ?`,
-		PLAYERS_TABLE_NAME, BALANCE_COL_NAME, BALANCE_COL_NAME, PLAYER_ID_COL_NAME))
+		playersTableName, balanceColNmae, balanceColNmae, playerIDColName))
 	if err != nil {
 		playerConnector.Close()
 		return nil, err
 	}
 	playerConnector.slct, err = conn.Prepare(fmt.Sprintf(`SELECT %s, %s FROM %s WHERE %s = ?`,
-		PLAYER_ID_COL_NAME, BALANCE_COL_NAME, PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME))
+		playerIDColName, balanceColNmae, playersTableName, playerIDColName))
 	if err != nil {
 		playerConnector.Close()
 		return nil, err
@@ -84,7 +84,7 @@ func (pC *PlayerConnector) Create(player *entity.Player) error {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
-	_, err := pC.insert.Exec(player.Id(), player.Balance())
+	_, err := pC.insert.Exec(player.ID(), player.Balance())
 	if err == nil {
 		return nil
 	}
@@ -98,20 +98,20 @@ func (pC *PlayerConnector) Read(id string) *entity.Player {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
-	var playerId string
+	var playerID string
 	var balance float32
-	err := pC.slct.QueryRow(id).Scan(&playerId, &balance)
+	err := pC.slct.QueryRow(id).Scan(&playerID, &balance)
 	if err != nil {
 		return nil
 	}
-	return entity.NewPlayer(playerId, balance)
+	return entity.NewPlayer(playerID, balance)
 }
 
-func (pC *PlayerConnector) Take(playerId string, points float32) error {
+func (pC *PlayerConnector) Take(playerID string, points float32) error {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
-	r, err := pC.take.Exec(points, playerId)
+	r, err := pC.take.Exec(points, playerID)
 	if err != nil {
 		if err := err.(sqlite3.Error); err.Code == sqlite3.ErrConstraint {
 			return ErrNotEnoughPoints
@@ -125,11 +125,11 @@ func (pC *PlayerConnector) Take(playerId string, points float32) error {
 	return nil
 }
 
-func (pC *PlayerConnector) Fund(playerId string, points float32) error {
+func (pC *PlayerConnector) Fund(playerID string, points float32) error {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
-	r, err := pC.fund.Exec(points, playerId)
+	r, err := pC.fund.Exec(points, playerID)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (pC *PlayerConnector) UpdateWithTx(tx *sql.Tx, players ...*entity.Player) e
 
 	preparedUpdateTx := tx.Stmt(pC.update)
 	for _, player := range players {
-		_, err := preparedUpdateTx.Exec(player.Balance(), player.Id())
+		_, err := preparedUpdateTx.Exec(player.Balance(), player.ID())
 		if err != nil {
 			return err
 		}

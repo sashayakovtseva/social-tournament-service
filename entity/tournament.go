@@ -1,9 +1,9 @@
 package entity
 
 type ResultTournamentRequest struct {
-	Id      string `json:"tournamentId"`
+	ID      string `json:"tournamentId"`
 	Winners []struct {
-		Id    string  `json:"playerId"`
+		ID    string  `json:"playerId"`
 		Prize float32 `json:"prize"`
 	} `json:"winners"`
 }
@@ -28,9 +28,9 @@ func (t *Tournament) Result(participants []*Player, backPlayers [][]*Player, win
 		backers := backPlayers[i]
 		if prize, ok := winners[*player]; ok {
 			won := prize / float32(len(backers)+1)
-			involved[player.Id()] = player.Balance() + won
+			involved[player.ID()] = player.Balance() + won
 			for _, back := range backers {
-				involved[back.Id()] = back.Balance() + won
+				involved[back.ID()] = back.Balance() + won
 			}
 		}
 	}
@@ -57,7 +57,7 @@ func (t *Tournament) Join(player *Player, backers []*Player) bool {
 	return true
 }
 
-func (t *Tournament) Id() string {
+func (t *Tournament) ID() string {
 	return t.id
 }
 func (t *Tournament) Deposit() float32 {

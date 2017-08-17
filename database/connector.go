@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 
+	// imported for driver registration
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -18,25 +19,25 @@ type DBConnector struct {
 }
 
 func newConnector() (*DBConnector, error) {
-	db, err := sql.Open("sqlite3", "file:"+DB_LOCATION+DB_NAME+"?cache=shared&mode=rwc")
+	db, err := sql.Open("sqlite3", "file:"+dbLocation+dbName+"?cache=shared&mode=rwc")
 	if err != nil {
 		return nil, err
 	}
 
 	// create tables if they don't exist yet
-	if _, err = db.Exec(CREATE_PLAYERS_TABLE); err != nil {
+	if _, err = db.Exec(createPlayersTable); err != nil {
 		db.Close()
 		return nil, err
 	}
-	if _, err = db.Exec(CREATE_TOURNAMENTS_TABLE); err != nil {
+	if _, err = db.Exec(createTournamentsTable); err != nil {
 		db.Close()
 		return nil, err
 	}
-	if _, err = db.Exec(CREATE_P2T_TABLE); err != nil {
+	if _, err = db.Exec(createP2tTable); err != nil {
 		db.Close()
 		return nil, err
 	}
-	if _, err = db.Exec(CREATE_P2B_TABLE); err != nil {
+	if _, err = db.Exec(createP2bTable); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -55,7 +56,7 @@ func newConnector() (*DBConnector, error) {
 func Reset() (e error) {
 	resetMutex.Lock()
 	defer resetMutex.Unlock()
-	for _, table := range STS_TABLES {
+	for _, table := range stsTables {
 		if _, err := conn.Exec(`DELETE FROM ` + table); err != nil {
 			e = err
 		}

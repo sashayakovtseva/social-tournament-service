@@ -9,15 +9,15 @@ import (
 )
 
 const (
-	DEPLOY_PORT      = 8080
-	PLAYER_ID_PARAM  = "playerId"
-	POINTS_PARAM     = "points"
-	APPLICATION_JSON = "application/json"
-	CONTENT_TYPE     = "Content-Type"
+	DeployPort      = 8080
+	playerIDParam   = "playerId"
+	pointsParam     = "points"
+	applicationJSON = "application/json"
+	contentType     = "Content-Type"
 )
 
 type PlayerBalanceResponse struct {
-	Id      string  `json:"playerId"`
+	ID      string  `json:"playerId"`
 	Balance float32 `json:"balance"`
 }
 
@@ -32,7 +32,7 @@ func HandleFund(w http.ResponseWriter, r *http.Request) error {
 func HandleBalance(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	params := r.URL.Query()
-	playerId := params.Get(PLAYER_ID_PARAM)
+	playerID := params.Get(playerIDParam)
 	playerController := controller.GetPlayerController()
 
 	select {
@@ -40,10 +40,10 @@ func HandleBalance(w http.ResponseWriter, r *http.Request) error {
 		err := ctx.Err()
 		log(ctx, err.Error())
 		return err
-	case player := <-playerController.Read(playerId):
+	case player := <-playerController.Read(playerID):
 		if player != nil {
-			w.Header().Set(CONTENT_TYPE, APPLICATION_JSON)
-			return json.NewEncoder(w).Encode(PlayerBalanceResponse{Balance: player.Balance(), Id: player.Id()})
+			w.Header().Set(contentType, applicationJSON)
+			return json.NewEncoder(w).Encode(PlayerBalanceResponse{Balance: player.Balance(), ID: player.ID()})
 		}
 		return errors.New("no such player")
 	}
@@ -52,8 +52,8 @@ func HandleBalance(w http.ResponseWriter, r *http.Request) error {
 func handleUpdate(_ http.ResponseWriter, r *http.Request, update func(string, float32) chan error) error {
 	ctx := r.Context()
 	params := r.URL.Query()
-	playerId := params.Get(PLAYER_ID_PARAM)
-	points, err := parsePointsParam(params.Get(POINTS_PARAM))
+	playerID := params.Get(playerIDParam)
+	points, err := parsePointsParam(params.Get(pointsParam))
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func handleUpdate(_ http.ResponseWriter, r *http.Request, update func(string, fl
 		err := ctx.Err()
 		log(ctx, err.Error())
 		return err
-	case err := <-update(playerId, points):
+	case err := <-update(playerID, points):
 		return err
 	}
 }

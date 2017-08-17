@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"testing"
-	"io"
 	"strings"
+	"testing"
 
 	h "github.com/sashayakovtseva/social-tournament-service/handler"
 )
@@ -40,7 +40,7 @@ func TestServer(t *testing.T) {
 	http.Handle("/balance", h.FilterGet(h.HandleWithErrWrap(h.HandleBalance)))
 	http.Handle("/announceTournament", h.FilterGet(h.HandleWithErrWrap(h.HandleAnnounce)))
 	http.Handle("/joinTournament", h.FilterGet(h.HandleWithErrWrap(h.HandleJoin)))
-	http.Handle("/resultTournament", h.MethodPost(h.FilterJson(h.HandleWithErrWrap(h.HandleResult))))
+	http.Handle("/resultTournament", h.MethodPost(h.FilterJSON(h.HandleWithErrWrap(h.HandleResult))))
 	http.Handle("/reset", h.FilterGet(h.HandleWithErrWrap(h.HandleReset)))
 
 	ts := httptest.NewServer(http.DefaultServeMux)
@@ -122,7 +122,7 @@ func TestServer(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = post(ts.URL+"/resultTournament", h.APPLICATION_JSON,
+	err = post(ts.URL+"/resultTournament", "application/json",
 		strings.NewReader("{\"tournamentId\": \"1\", \"winners\": [{\"playerId\": \"P1\", \"prize\": 2000}]}"))
 	if err != nil {
 		t.Error(err)
@@ -148,7 +148,6 @@ func TestServer(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
 
 	err = get(ts.URL + "/reset")
 	if err != nil {

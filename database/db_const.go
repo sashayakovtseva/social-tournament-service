@@ -3,53 +3,53 @@ package database
 import "fmt"
 
 const (
-	DB_LOCATION = "./"
-	DB_NAME     = "sts.db"
+	dbLocation = "./"
+	dbName     = "sts.db"
 
-	PLAYERS_TABLE_NAME     = "players"
-	TOURNAMENTS_TABLE_NAME = "tournaments"
-	P2T_TABLE_NAME         = "p2t"
-	P2B_TABLE_NAME         = "p2b"
+	playersTableName     = "players"
+	tournamentsTableName = "tournaments"
+	p2tTableName         = "p2t"
+	p2bTableName         = "p2b"
 
-	PLAYER_ID_COL_NAME     = "pid"
-	TOURNAMENT_ID_COL_NAME = "tid"
-	BALANCE_COL_NAME       = "balance"
-	DEPOSIT_COL_NAME       = "deposit"
-	FINISHED_COL_NAME      = "finished"
-	BACKER_COL_NAME        = "bid"
+	playerIDColName     = "pid"
+	tournamentIDColName = "tid"
+	balanceColNmae      = "balance"
+	depositColName      = "deposit"
+	finishedColName     = "finished"
+	backerColName       = "bid"
 )
 
 var (
-	CREATE_PLAYERS_TABLE = fmt.Sprintf(
+	createPlayersTable = fmt.Sprintf(
 		`CREATE TABLE IF NOT EXISTS %s(%s TEXT PRIMARY KEY CHECK(%s <> ""),
 									   %s INTEGER NOT NULL CHECK (%s >= 0))`,
-		PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME, PLAYER_ID_COL_NAME, BALANCE_COL_NAME, BALANCE_COL_NAME)
+		playersTableName, playerIDColName, playerIDColName, balanceColNmae, balanceColNmae)
 
-	CREATE_TOURNAMENTS_TABLE = fmt.Sprintf(
+	createTournamentsTable = fmt.Sprintf(
 		`CREATE TABLE IF NOT EXISTS %s(%s TEXT PRIMARY KEY CHECK(%s <> ""),
 									   %s INTEGER NOT NULL CHECK (%s >= 0),
 									   %s BOOL NOT NULL DEFAULT 0)`,
-		TOURNAMENTS_TABLE_NAME, TOURNAMENT_ID_COL_NAME, TOURNAMENT_ID_COL_NAME, DEPOSIT_COL_NAME, DEPOSIT_COL_NAME, FINISHED_COL_NAME)
+		tournamentsTableName, tournamentIDColName, tournamentIDColName, depositColName, depositColName, finishedColName)
 
-	CREATE_P2T_TABLE = fmt.Sprintf(
+	createP2tTable = fmt.Sprintf(
 		`CREATE TABLE IF NOT EXISTS %s(%s TEXT REFERENCES %s(%s) ON DELETE CASCADE,
 									   %s TEXT REFERENCES %s(%s) ON DELETE CASCADE,
 									   PRIMARY KEY (%s,%s))`,
-		P2T_TABLE_NAME, PLAYER_ID_COL_NAME, PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME,
-		TOURNAMENT_ID_COL_NAME, TOURNAMENTS_TABLE_NAME, TOURNAMENT_ID_COL_NAME,
-		PLAYER_ID_COL_NAME, TOURNAMENT_ID_COL_NAME)
+		p2tTableName, playerIDColName, playersTableName, playerIDColName,
+		tournamentIDColName, tournamentsTableName, tournamentIDColName,
+		playerIDColName, tournamentIDColName)
 
-	CREATE_P2B_TABLE = fmt.Sprintf(
+	createP2bTable = fmt.Sprintf(
 		`CREATE TABLE IF NOT EXISTS %s(%s TEXT REFERENCES %s(%s) ON DELETE CASCADE,
 									   %s TEXT REFERENCES %s(%s) ON DELETE CASCADE,
 									   %s TEXT REFERENCES %s(%s) ON DELETE CASCADE,
 									   PRIMARY KEY (%s,%s, %s),
 									   FOREIGN KEY (%s, %s) REFERENCES %s(%s, %s))`,
-		P2B_TABLE_NAME, PLAYER_ID_COL_NAME, PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME,
-		TOURNAMENT_ID_COL_NAME, TOURNAMENTS_TABLE_NAME, TOURNAMENT_ID_COL_NAME,
-		BACKER_COL_NAME, PLAYERS_TABLE_NAME, PLAYER_ID_COL_NAME,
-		PLAYER_ID_COL_NAME, TOURNAMENT_ID_COL_NAME, BACKER_COL_NAME,
-		PLAYER_ID_COL_NAME, TOURNAMENT_ID_COL_NAME, P2T_TABLE_NAME, PLAYER_ID_COL_NAME, TOURNAMENT_ID_COL_NAME)
+		p2bTableName, playerIDColName, playersTableName, playerIDColName,
+		tournamentIDColName, tournamentsTableName, tournamentIDColName,
+		backerColName, playersTableName, playerIDColName,
+		playerIDColName, tournamentIDColName, backerColName,
+		playerIDColName, tournamentIDColName, p2tTableName, playerIDColName, tournamentIDColName)
 
-	STS_TABLES = []string{P2B_TABLE_NAME, P2T_TABLE_NAME, TOURNAMENTS_TABLE_NAME, PLAYERS_TABLE_NAME}
+	stsTables = []string{p2bTableName, p2tTableName, tournamentsTableName, playersTableName}
 )
