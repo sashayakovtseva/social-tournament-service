@@ -20,18 +20,18 @@ const (
 )
 
 var (
-	createPlayersTable = fmt.Sprintf(
+	createPlayersTableIfNotExists = fmt.Sprintf(
 		`CREATE TABLE IF NOT EXISTS %s(%s TEXT PRIMARY KEY CHECK(%s <> ""),
 									   %s INTEGER NOT NULL CHECK (%s >= 0))`,
 		playersTableName, playerIDColName, playerIDColName, balanceColNmae, balanceColNmae)
 
-	createTournamentsTable = fmt.Sprintf(
+	createTournamentsTableIfNotExists = fmt.Sprintf(
 		`CREATE TABLE IF NOT EXISTS %s(%s TEXT PRIMARY KEY CHECK(%s <> ""),
 									   %s INTEGER NOT NULL CHECK (%s >= 0),
 									   %s BOOL NOT NULL DEFAULT 0)`,
 		tournamentsTableName, tournamentIDColName, tournamentIDColName, depositColName, depositColName, finishedColName)
 
-	createP2tTable = fmt.Sprintf(
+	createP2tTableIfNotExists = fmt.Sprintf(
 		`CREATE TABLE IF NOT EXISTS %s(%s TEXT REFERENCES %s(%s) ON DELETE CASCADE,
 									   %s TEXT REFERENCES %s(%s) ON DELETE CASCADE,
 									   PRIMARY KEY (%s,%s))`,
@@ -39,7 +39,7 @@ var (
 		tournamentIDColName, tournamentsTableName, tournamentIDColName,
 		playerIDColName, tournamentIDColName)
 
-	createP2bTable = fmt.Sprintf(
+	createP2bTableIfNotExists = fmt.Sprintf(
 		`CREATE TABLE IF NOT EXISTS %s(%s TEXT REFERENCES %s(%s) ON DELETE CASCADE,
 									   %s TEXT REFERENCES %s(%s) ON DELETE CASCADE,
 									   %s TEXT REFERENCES %s(%s) ON DELETE CASCADE,
@@ -51,5 +51,11 @@ var (
 		playerIDColName, tournamentIDColName, backerColName,
 		playerIDColName, tournamentIDColName, p2tTableName, playerIDColName, tournamentIDColName)
 
+	pragmaJournalMode = "PRAGMA journal_mode=WAL"
+	pragmaTempStore   = "PRAGMA temp_store=MEMORY"
+
+	SQLs = []string{createP2bTableIfNotExists, createP2tTableIfNotExists,
+		createPlayersTableIfNotExists, createTournamentsTableIfNotExists,
+		pragmaJournalMode, pragmaTempStore}
 	stsTables = []string{p2bTableName, p2tTableName, tournamentsTableName, playersTableName}
 )
