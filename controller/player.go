@@ -85,9 +85,9 @@ func (pC *PlayerController) listenUpdate() {
 		case job := <-pC.jobs:
 			switch job.op {
 			case opTake:
-				pC.jobResults <- db.PlayerConn.Take(job.playerID, job.points)
+				pC.jobResults <- db.PlayerConn.TakePoints(job.playerID, job.points)
 			case opFund:
-				pC.jobResults <- db.PlayerConn.Fund(job.playerID, job.points)
+				pC.jobResults <- db.PlayerConn.FundPoints(job.playerID, job.points)
 			}
 		}
 	}
