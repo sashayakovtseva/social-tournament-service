@@ -36,7 +36,7 @@ func HandleBalance(w http.ResponseWriter, r *http.Request) error {
 	select {
 	case <-ctx.Done():
 		err := ctx.Err()
-		logWithRequertID(ctx, err.Error())
+		logWithRequestID(ctx, err.Error())
 		return err
 	case player := <-playerController.Read(playerID):
 		if player != nil {
@@ -58,7 +58,7 @@ func handleUpdate(_ http.ResponseWriter, r *http.Request, update func(string, fl
 	select {
 	case <-ctx.Done():
 		err := ctx.Err()
-		logWithRequertID(ctx, err.Error())
+		logWithRequestID(ctx, err.Error())
 		return err
 	case err := <-update(playerID, points):
 		return err

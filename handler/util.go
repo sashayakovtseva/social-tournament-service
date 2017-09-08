@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func logWithRequertID(ctx context.Context, v ...interface{}) {
+func logWithRequestID(ctx context.Context, v ...interface{}) {
 	vals := make([]interface{}, 1, len(v)+1)
 	id, ok := ctx.Value(requestIDKey).(int64)
 	if !ok {

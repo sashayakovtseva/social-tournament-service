@@ -66,7 +66,7 @@ func LogElapsedTime(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		handler.ServeHTTP(w, r)
-		logWithRequertID(r.Context(), r.URL.String(), "elapsed time", time.Since(start))
+		logWithRequestID(r.Context(), r.URL.String(), "elapsed time", time.Since(start))
 	})
 }
 

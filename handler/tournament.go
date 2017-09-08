@@ -27,7 +27,7 @@ func HandleAnnounce(_ http.ResponseWriter, r *http.Request) error {
 	select {
 	case <-ctx.Done():
 		err := ctx.Err()
-		logWithRequertID(ctx, err.Error())
+		logWithRequestID(ctx, err.Error())
 		return err
 	case err := <-tournamentController.Announce(tournamentID, deposit):
 		return err
