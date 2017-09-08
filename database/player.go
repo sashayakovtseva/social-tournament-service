@@ -3,10 +3,8 @@ package database
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 
-	"github.com/mattn/go-sqlite3"
 	"github.com/sashayakovtseva/social-tournament-service/entity"
 )
 
@@ -31,51 +29,37 @@ func newPlayerConnector() (*PlayerConnector, error) {
 
 	playerConnector := new(PlayerConnector)
 
-	playerConnector.insert, err = playerConnector.prepareAndAdd(`INSERT INTO %s(%s,%s) values(?,?)`,
-		playersTableName, playerIDColName, balanceColNmae)
-	if playerConnector.haveToFailAndClose(err) {
+	playerConnector.insert, err = prepareAndAdd(playerConnector.statements, `INSERT INTO %s(%s,%s) values(?,?)`,
+		playersTableName, playerIDColName, balanceColName)
+	if haveToFailAndClose(playerConnector, err) {
 		return nil, err
 	}
 
-	playerConnector.update, err = playerConnector.prepareAndAdd(`UPDATE %s SET %s = ? WHERE %s = ?`,
-		playersTableName, balanceColNmae, playerIDColName)
-	if playerConnector.haveToFailAndClose(err) {
+	playerConnector.update, err = prepareAndAdd(playerConnector.statements, `UPDATE %s SET %s = ? WHERE %s = ?`,
+		playersTableName, balanceColName, playerIDColName)
+	if haveToFailAndClose(playerConnector, err) {
 		return nil, err
 	}
 
-	playerConnector.fund, err = playerConnector.prepareAndAdd(`UPDATE %s SET %s = %s + ? WHERE %s = ?`,
-		playersTableName, balanceColNmae, balanceColNmae, playerIDColName)
-	if playerConnector.haveToFailAndClose(err) {
+	playerConnector.fund, err = prepareAndAdd(playerConnector.statements, `UPDATE %s SET %s = %s + ? WHERE %s = ?`,
+		playersTableName, balanceColName, balanceColName, playerIDColName)
+	if haveToFailAndClose(playerConnector, err) {
 		return nil, err
 	}
 
-	playerConnector.take, err = playerConnector.prepareAndAdd(`UPDATE %s SET %s = %s - ? WHERE %s = ?`,
-		playersTableName, balanceColNmae, balanceColNmae, playerIDColName)
-	if playerConnector.haveToFailAndClose(err) {
+	playerConnector.take, err = prepareAndAdd(playerConnector.statements, `UPDATE %s SET %s = %s - ? WHERE %s = ?`,
+		playersTableName, balanceColName, balanceColName, playerIDColName)
+	if haveToFailAndClose(playerConnector, err) {
 		return nil, err
 	}
 
-	playerConnector.read, err = playerConnector.prepareAndAdd(`SELECT %s, %s FROM %s WHERE %s = ?`,
-		playerIDColName, balanceColNmae, playersTableName, playerIDColName)
-	if playerConnector.haveToFailAndClose(err) {
+	playerConnector.read, err = prepareAndAdd(playerConnector.statements, `SELECT %s, %s FROM %s WHERE %s = ?`,
+		playerIDColName, balanceColName, playersTableName, playerIDColName)
+	if haveToFailAndClose(playerConnector, err) {
 		return nil, err
 	}
 
 	return playerConnector, nil
-}
-
-func (connector *PlayerConnector) prepareAndAdd(format string, v ...interface{}) (*sql.Stmt, error) {
-	stmt, err := conn.Prepare(fmt.Sprintf(format, v...))
-	connector.statements = append(connector.statements, stmt)
-	return stmt, err
-}
-
-func (connector *PlayerConnector) haveToFailAndClose(err error) bool {
-	if err != nil {
-		connector.Close()
-		return true
-	}
-	return false
 }
 
 func (connector *PlayerConnector) Close() {
@@ -84,18 +68,12 @@ func (connector *PlayerConnector) Close() {
 	}
 }
 
-func checkAndClose(stmt *sql.Stmt) {
-	if stmt != nil {
-		stmt.Close()
-	}
-}
-
 func (connector *PlayerConnector) Create(player *entity.Player) error {
 	resetMutex.RLock()
 	defer resetMutex.RUnlock()
 
 	_, err := connector.insert.Exec(player.ID(), player.Balance())
-	return connector.replaceConstraintWithCustom(err, ErrPlayerAlreadyExists)
+	return replaceConstraintWithCustom(err, ErrPlayerAlreadyExists)
 }
 
 func (connector *PlayerConnector) Read(id string) *entity.Player {
@@ -118,7 +96,7 @@ func (connector *PlayerConnector) TakePoints(playerID string, points float32) er
 
 	res, err := connector.take.Exec(points, playerID)
 	if err != nil {
-		return connector.replaceConstraintWithCustom(err, ErrNotEnoughPoints)
+		return replaceConstraintWithCustom(err, ErrNotEnoughPoints)
 	}
 	return checkPlayerExists(res)
 }
@@ -137,16 +115,6 @@ func (connector *PlayerConnector) FundPoints(playerID string, points float32) er
 func checkPlayerExists(result sql.Result) error {
 	if n, _ := result.RowsAffected(); n == 0 {
 		return ErrNoSuchPlayer
-	}
-	return nil
-}
-
-func (connector *PlayerConnector) replaceConstraintWithCustom(err, custom error) error {
-	if err != nil {
-		if err := err.(sqlite3.Error); err.Code == sqlite3.ErrConstraint {
-			return custom
-		}
-		return err
 	}
 	return nil
 }

@@ -9,11 +9,9 @@ import (
 )
 
 const (
-	DeployPort      = 8080
-	playerIDParam   = "playerId"
-	pointsParam     = "points"
-	applicationJSON = "application/json"
-	contentType     = "Content-Type"
+	DeployPort    = 8080
+	playerIDParam = "playerId"
+	pointsParam   = "points"
 )
 
 type PlayerBalanceResponse struct {
@@ -22,11 +20,11 @@ type PlayerBalanceResponse struct {
 }
 
 func HandleTake(w http.ResponseWriter, r *http.Request) error {
-	return handleUpdate(w, r, controller.GetPlayerController().Take)
+	return handleUpdate(w, r, controller.GetPlayerController().TakePoints)
 }
 
 func HandleFund(w http.ResponseWriter, r *http.Request) error {
-	return handleUpdate(w, r, controller.GetPlayerController().Fund)
+	return handleUpdate(w, r, controller.GetPlayerController().FundPoints)
 }
 
 func HandleBalance(w http.ResponseWriter, r *http.Request) error {
@@ -38,11 +36,11 @@ func HandleBalance(w http.ResponseWriter, r *http.Request) error {
 	select {
 	case <-ctx.Done():
 		err := ctx.Err()
-		log(ctx, err.Error())
+		logWithRequertID(ctx, err.Error())
 		return err
 	case player := <-playerController.Read(playerID):
 		if player != nil {
-			w.Header().Set(contentType, applicationJSON)
+			w.Header().Set("Content-Type", "application/json")
 			return json.NewEncoder(w).Encode(PlayerBalanceResponse{Balance: player.Balance(), ID: player.ID()})
 		}
 		return errors.New("no such player")
@@ -60,7 +58,7 @@ func handleUpdate(_ http.ResponseWriter, r *http.Request, update func(string, fl
 	select {
 	case <-ctx.Done():
 		err := ctx.Err()
-		log(ctx, err.Error())
+		logWithRequertID(ctx, err.Error())
 		return err
 	case err := <-update(playerID, points):
 		return err

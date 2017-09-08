@@ -12,7 +12,7 @@ func NewPlayer(id string, balance float32) *Player {
 	}
 }
 
-func (p *Player) Take(points float32) bool {
+func (p *Player) TakePoints(points float32) bool {
 	if points > p.balance {
 		return false
 	}
@@ -20,7 +20,7 @@ func (p *Player) Take(points float32) bool {
 	return true
 }
 
-func (p *Player) Fund(points float32) {
+func (p *Player) FundPoints(points float32) {
 	p.balance += points
 }
 

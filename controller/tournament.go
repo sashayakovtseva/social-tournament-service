@@ -15,8 +15,9 @@ var (
 )
 
 type TournamentController struct {
-	lock sync.Mutex
+	sync.Mutex
 }
+
 
 func GetTournamentController() *TournamentController {
 	tCOnce.Do(func() {
@@ -25,7 +26,7 @@ func GetTournamentController() *TournamentController {
 	return tCSingleton
 }
 
-func (tC *TournamentController) Announce(tournamentID string, deposit float32) chan error {
+func (controller *TournamentController) Announce(tournamentID string, deposit float32) chan error {
 	err := make(chan error, 1)
 	go func() {
 		err <- db.TournamentConn.Create(entity.NewTournament(tournamentID, deposit, false))
@@ -33,11 +34,11 @@ func (tC *TournamentController) Announce(tournamentID string, deposit float32) c
 	return err
 }
 
-func (tC *TournamentController) Close() {}
+func (controller *TournamentController) Close() {}
 
-func (tC *TournamentController) Result(ctx context.Context, tournamentResult *entity.ResultTournamentRequest) error {
-	tC.lock.Lock()
-	defer tC.lock.Unlock()
+func (controller *TournamentController) Result(ctx context.Context, tournamentResult *entity.ResultTournamentRequest) error {
+	controller.Lock()
+	defer controller.Unlock()
 
 	tournament := db.TournamentConn.Read(tournamentResult.ID)
 	if tournament == nil {
@@ -46,29 +47,58 @@ func (tC *TournamentController) Result(ctx context.Context, tournamentResult *en
 	if tournament.IsFinished() {
 		return errors.New("tournament has finished already")
 	}
-	participants, backPlayers, err := db.TournamentConn.SelectParticipants(tournamentResult.ID)
+
+	participants, err := db.TournamentConn.SelectParticipants(tournamentResult.ID)
 	if err != nil {
 		return err
 	}
+
+	backPlayers, err := controller.selectAllBackPlayers(tournamentResult.ID, participants)
+	if err != nil {
+		return err
+	}
+
 	participantsSet := make(map[string]float32, len(participants))
 	for _, p := range participants {
 		participantsSet[p.ID()] = p.Balance()
 	}
-	winners := make(map[entity.Player]float32)
-	for _, winner := range tournamentResult.Winners {
-		balance, ok := participantsSet[winner.ID]
-		if !ok {
-			return errors.New("winner is not a participant")
-		}
-		winners[*entity.NewPlayer(winner.ID, balance)] = winner.Prize
+
+	winners, err := controller.checkWinnersAndFormMap(participantsSet, tournamentResult.Winners)
+	if err != nil {
+		return err
 	}
+
 	involved := tournament.Result(participants, backPlayers, winners)
 	return db.TournamentConn.UpdateResult(tournament, involved)
 }
 
-func (tC *TournamentController) JoinTournament(ctx context.Context, tournamentID, playerID string, backersID []string) error {
-	tC.lock.Lock()
-	defer tC.lock.Unlock()
+func (controller *TournamentController) selectAllBackPlayers(tournamentID string, participants []*entity.Player) ([][]*entity.Player, error) {
+	backPlayers := make([][]*entity.Player, 0, len(participants))
+	for _, p := range participants {
+		backs, err := db.TournamentConn.SelectBackPlayers(tournamentID, p.ID())
+		if err != nil {
+			return nil, err
+		}
+		backPlayers = append(backPlayers, backs)
+	}
+	return backPlayers, nil
+}
+
+func (controller *TournamentController) checkWinnersAndFormMap(participantsSet map[string]float32, winners []entity.Winner) (map[entity.Player]float32, error) {
+	w := make(map[entity.Player]float32)
+	for _, winner := range winners {
+		balance, ok := participantsSet[winner.ID]
+		if !ok {
+			return nil, errors.New("winner is not a participant")
+		}
+		w[*entity.NewPlayer(winner.ID, balance)] = winner.Prize
+	}
+	return w, nil
+}
+
+func (controller *TournamentController) JoinTournament(ctx context.Context, tournamentID, playerID string, backersID []string) error {
+	controller.Lock()
+	defer controller.Unlock()
 
 	tournament := db.TournamentConn.Read(tournamentID)
 	if tournament == nil {
@@ -81,16 +111,24 @@ func (tC *TournamentController) JoinTournament(ctx context.Context, tournamentID
 	if player == nil {
 		return errors.New("no such player")
 	}
-	backPlayers := make([]*entity.Player, 0)
-	for _, backerId := range backersID {
-		backer := db.PlayerConn.Read(backerId)
-		if backer == nil {
-			return errors.New("one or more backers are not found")
-		}
-		backPlayers = append(backPlayers, backer)
+	backPlayers, err := controller.readBackPlayersByIDs(backersID)
+	if err != nil {
+		return err
 	}
 	if !tournament.Join(player, backPlayers) {
 		return errors.New("not enough points to join")
 	}
 	return db.TournamentConn.UpdateJoin(tournament, player, backPlayers)
+}
+
+func (controller *TournamentController) readBackPlayersByIDs(backersID []string) ([]*entity.Player, error) {
+	backPlayers := make([]*entity.Player, 0)
+	for _, backerId := range backersID {
+		backer := db.PlayerConn.Read(backerId)
+		if backer == nil {
+			return nil, errors.New("one or more backers are not found")
+		}
+		backPlayers = append(backPlayers, backer)
+	}
+	return backPlayers, nil
 }

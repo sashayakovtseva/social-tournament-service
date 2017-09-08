@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	l "log"
+	"log"
 	"strconv"
 )
 
-func log(ctx context.Context, v ...interface{}) {
+func logWithRequertID(ctx context.Context, v ...interface{}) {
 	vals := make([]interface{}, 1, len(v)+1)
 	id, ok := ctx.Value(requestIDKey).(int64)
 	if !ok {
@@ -18,7 +18,7 @@ func log(ctx context.Context, v ...interface{}) {
 
 	}
 	vals = append(vals, v...)
-	l.Println(vals...)
+	log.Println(vals...)
 }
 
 func parsePointsParam(p string) (float32, error) {

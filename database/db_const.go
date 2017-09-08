@@ -13,7 +13,7 @@ const (
 
 	playerIDColName     = "pid"
 	tournamentIDColName = "tid"
-	balanceColNmae      = "balance"
+	balanceColName      = "balance"
 	depositColName      = "deposit"
 	finishedColName     = "finished"
 	backerColName       = "bid"
@@ -23,7 +23,7 @@ var (
 	createPlayersTableIfNotExists = fmt.Sprintf(
 		`CREATE TABLE IF NOT EXISTS %s(%s TEXT PRIMARY KEY CHECK(%s <> ""),
 									   %s INTEGER NOT NULL CHECK (%s >= 0))`,
-		playersTableName, playerIDColName, playerIDColName, balanceColNmae, balanceColNmae)
+		playersTableName, playerIDColName, playerIDColName, balanceColName, balanceColName)
 
 	createTournamentsTableIfNotExists = fmt.Sprintf(
 		`CREATE TABLE IF NOT EXISTS %s(%s TEXT PRIMARY KEY CHECK(%s <> ""),

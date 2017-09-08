@@ -35,7 +35,7 @@ func MethodPost(handler http.Handler) http.Handler {
 
 func FilterJSON(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get(contentType) != applicationJSON {
+		if r.Header.Get("Content-Type") != "application/json" {
 			http.Error(w, "", http.StatusUnsupportedMediaType)
 		} else {
 			handler.ServeHTTP(w, r)
@@ -66,7 +66,7 @@ func LogElapsedTime(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		handler.ServeHTTP(w, r)
-		log(r.Context(), r.URL.String(), "elapsed time", time.Since(start))
+		logWithRequertID(r.Context(), r.URL.String(), "elapsed time", time.Since(start))
 	})
 }
 

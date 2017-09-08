@@ -2,10 +2,12 @@ package entity
 
 type ResultTournamentRequest struct {
 	ID      string `json:"tournamentId"`
-	Winners []struct {
-		ID    string  `json:"playerId"`
-		Prize float32 `json:"prize"`
-	} `json:"winners"`
+	Winners []Winner `json:"winners"`
+}
+
+type Winner struct {
+	ID    string  `json:"playerId"`
+	Prize float32 `json:"prize"`
 }
 
 type Tournament struct {
@@ -46,11 +48,11 @@ func (t *Tournament) Result(participants []*Player, backPlayers [][]*Player, win
 
 func (t *Tournament) Join(player *Player, backers []*Player) bool {
 	contribute := t.deposit / float32(len(backers)+1)
-	if !player.Take(contribute) {
+	if !player.TakePoints(contribute) {
 		return false
 	}
 	for _, backer := range backers {
-		if !backer.Take(contribute) {
+		if !backer.TakePoints(contribute) {
 			return false
 		}
 	}
@@ -60,9 +62,11 @@ func (t *Tournament) Join(player *Player, backers []*Player) bool {
 func (t *Tournament) ID() string {
 	return t.id
 }
+
 func (t *Tournament) Deposit() float32 {
 	return t.deposit
 }
+
 func (t *Tournament) IsFinished() bool {
 	return t.isFinished
 }
